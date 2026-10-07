@@ -35,8 +35,11 @@ jobs:
           path: |
             D:/c
             target
+            .patched
           key: windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-          restore-keys: windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          restore-keys: |
+            windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+            windows-rust-
       - name: Prepare stable Bedrock backport
         run: python scripts/upstream.py prepare
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
@@ -63,6 +66,7 @@ jobs:
           path: |
             D:/c
             target
+            .patched
           key: ${{ steps.rust-cache.outputs.cache-primary-key }}
       - name: Windows GUI smoke test (mock provider, suggested and free-text answers)
         run: python dev/windows-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
@@ -72,6 +76,15 @@ jobs:
         with:
           name: windows-smoke-evidence
           path: dist/smoke/
+          if-no-files-found: ignore
+      - name: Windows purpose, resize, persistence and conversation-selection smoke test
+        run: python dev/windows-purpose-selection-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
+      - name: Upload purpose and selection evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: windows-purpose-selection-evidence
+          path: dist/purpose-selection-smoke/
           if-no-files-found: ignore
       - name: Package Windows executables and licenses
         run: ./scripts/package-windows.ps1

@@ -3,6 +3,7 @@
 Generated sources stay ignored; all other Codex crates remain Git dependencies.
 """
 import hashlib
+import filecmp
 import json
 from pathlib import Path
 import re
@@ -11,6 +12,31 @@ import subprocess
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def install_generated(source, destination):
+    """Verify generated contents afresh but preserve unchanged Cargo inputs."""
+    destination.mkdir(parents=True, exist_ok=True)
+    wanted = {path.relative_to(source) for path in source.rglob('*')}
+    for path in sorted(destination.rglob('*'), reverse=True):
+        if path.relative_to(destination) not in wanted:
+            if path.is_dir() and not path.is_symlink():
+                path.rmdir()
+            else:
+                path.unlink()
+    for path in source.rglob('*'):
+        target = destination / path.relative_to(source)
+        if target.is_symlink():
+            target.unlink()
+        elif target.exists() and path.is_dir() != target.is_dir():
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+        if path.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+        elif not target.is_file() or not filecmp.cmp(path, target, shallow=False):
+            shutil.copy2(path, target)
 
 
 def inline(value):
@@ -74,14 +100,11 @@ def materialize():
             workspace += f"{other['crate']} = {{ path = {inline(location)} }}\n"
         workspace += '\n[profile.dev]\ndebug = "line-tables-only"\n'
         (source / 'Cargo.toml').write_text(manifest + workspace)
-        destination = ROOT / '.patched' / name
-        if destination.exists():
-            shutil.rmtree(destination)
-        shutil.move(source, destination)
-        shutil.copy2(ROOT / 'LICENSE', destination / 'LICENSE')
-        shutil.copy2(ROOT / 'NOTICE', destination / 'NOTICE')
+        shutil.copy2(ROOT / 'LICENSE', source / 'LICENSE')
+        shutil.copy2(ROOT / 'NOTICE', source / 'NOTICE')
         stamp = {'revision': pin['revision'], 'patchSha256': hashlib.sha256(patch.read_bytes()).hexdigest()}
-        (destination / 'patch-provenance.json').write_text(json.dumps(stamp, indent=2) + '\n')
+        (source / 'patch-provenance.json').write_text(json.dumps(stamp, indent=2) + '\n')
+        install_generated(source, ROOT / '.patched' / name)
         print(f'Materialized stable {name} with the Bedrock tier backport')
     shutil.rmtree(temporary)
 
