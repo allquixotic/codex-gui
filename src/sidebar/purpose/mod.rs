@@ -68,6 +68,21 @@ enum ResultData {
 }
 
 impl PurposeController {
+    fn enqueue_purpose(&mut self, id: String, maximum: usize) {
+        // A completed turn also satisfies the initial cache-missing attempt.
+        self.attempted.insert(id.clone());
+        let revision = self.revisions.entry(id.clone()).or_default();
+        *revision += 1;
+        let revision = *revision;
+        self.queue
+            .retain(|job| !matches!(job, Job::Purpose { id: pending, .. } if pending == &id));
+        self.queue.push_back(Job::Purpose {
+            id,
+            revision,
+            maximum,
+        });
+    }
+
     fn apply_result(&mut self, result: ResultData) -> bool {
         match result {
             ResultData::Purpose {
@@ -260,24 +275,8 @@ impl AppController {
         }
     }
     fn purpose_enqueue(&mut self, id: String) {
-        let revision = self
-            .sidebar
-            .purpose
-            .revisions
-            .entry(id.clone())
-            .or_default();
-        *revision += 1;
-        let revision = *revision;
         let maximum = self.purpose_maximum();
-        self.sidebar
-            .purpose
-            .queue
-            .retain(|job| !matches!(job, Job::Purpose { id: pending, .. } if pending == &id));
-        self.sidebar.purpose.queue.push_back(Job::Purpose {
-            id,
-            revision,
-            maximum,
-        });
+        self.sidebar.purpose.enqueue_purpose(id, maximum);
         self.purpose_pump();
     }
     pub(super) fn purpose_on_notification(&mut self, notification: &ServerNotification) {
@@ -469,6 +468,17 @@ impl AppController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn v7_completed_request_also_marks_initial_summary_attempted() {
+        let mut controller = PurposeController::default();
+        controller.enqueue_purpose("a".into(), 12);
+        assert!(!controller.attempted.insert("a".into()));
+        assert_eq!(controller.queue.len(), 1);
+        controller.enqueue_purpose("a".into(), 12);
+        assert_eq!(controller.queue.len(), 1);
+        assert_eq!(controller.revisions["a"], 2);
+    }
+
     fn result(revision: u64, short: &str) -> ResultData {
         ResultData::Purpose {
             id: "a".into(),

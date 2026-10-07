@@ -519,6 +519,11 @@ requires_openai_auth = false
 request_max_retries = 0
 stream_max_retries = 0
 
+[features]
+plugins = false
+shell_snapshot = false
+memories = false
+
 [tools.update_plan]
 enabled = true
 """

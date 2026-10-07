@@ -30,7 +30,7 @@ V5: Speed choices and actual request tiers ! follow provider catalog and feature
 
 V6: Async questions ! show choices + free text; no send before Submit; exact message/index reply identity; turn end ! retain unanswered fields; rejected send ! preserve drafts; history replay ! deduplicate; transcript ! render question once.
 
-V7: Purpose inference ! consume only completed user requests, never assistant/tool context; one turn ! return title + plain-text tooltip; ephemeral ! no listed thread/rollout; fast model failure ! retry normal model.
+V7: Purpose inference ! consume only completed user requests, never assistant/tool context; one turn ! return title + plain-text tooltip; completed request ! also satisfy initial cache-missing scheduling; ephemeral ! no listed thread/rollout; fast model failure ! retry normal model.
 
 V8: Cache ! survive restart under resolved CODEX_HOME; any manual rename ! permanently protect title; tooltip ! remain generated; resize ! debounce ten seconds, visible rows only, cached tooltips only; title ! fit actual row without ellipses; stale result ! never replace newer context/width/name.
 
@@ -80,3 +80,9 @@ B13|2026-10-07|Stable core request builder independently discards all Bedrock ti
 B14|2026-10-07|Global/posted keys fail to activate guest native menus; GW_OWNER does not identify their owning window|V9; GetGUIThreadInfo ownership + IAccessible default action; standalone native-popup regression
 
 B15|2026-10-07|Pristine stable workspace Cargo.lock requires resolution changes when building helpers; --locked stops packaging after GUI build|Consumer helper manifest compiles unchanged stable entrypoints with the GUI root lockfile and exact Git dependencies, retaining setup asInvoker metadata; stable pin/package invariant covers recurrence
+
+B16|2026-10-07|Mock model catalog omitted the canonical instruction template required by stable Codex; real GUI server never became ready|Add minimal model_messages.instructions_template, parse fixture with upstream schema before Windows smoke, and retain startup logs; existing stable API migration policy covers recurrence
+
+B17|2026-10-07|Rich shaping gave every paragraph range 0..0, clamping cursor geometry and suppressing paint; native user-text right clicks were grabbed before the parent menu; synthetic Ctrl chords used uppercase text|V9; assign rich plain-text byte ranges, explicitly open native text menus, normalize unshifted primary chords, and assert real cursor progression/round-trip plus drag/clipboard/menu behavior
+
+B18|2026-10-07|Completed-turn summary scheduling did not mark the initial missing-cache attempt, allowing sidebar refresh to invalidate and duplicate in-flight inference|V7; share queue bookkeeping and verify exactly two purpose calls for two processed requests on software and GPU renderers

@@ -110,6 +110,7 @@ def drive_copy_menus(process, evidence, errors):
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('binary', type=Path)
+parser.add_argument('--renderer', choices=['software', 'auto', 'gpu'], default='software')
 parser.add_argument('--output', type=Path, default=ROOT / 'dist/purpose-selection-smoke')
 options = parser.parse_args()
 options.output.mkdir(parents=True, exist_ok=True)
@@ -149,7 +150,7 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-purpose-') as directory:
                 script = work / f'{name}.json'
                 script.write_text(json.dumps(steps))
                 with open(output / f'{name}.log', 'w') as gui_log:
-                    process = subprocess.Popen([str(options.binary.resolve()), '--renderer', 'software'], env=dict(os.environ, CODEX_HOME=str(home), CODEX_GUI_AUTOMATION=str(script)), stdout=gui_log, stderr=gui_log)
+                    process = subprocess.Popen([str(options.binary.resolve()), '--renderer', options.renderer], env=dict(os.environ, CODEX_HOME=str(home), CODEX_GUI_AUTOMATION=str(script)), stdout=gui_log, stderr=gui_log)
                     menu_evidence, menu_errors = [], []
                     driver = threading.Thread(target=drive_copy_menus, args=(process, menu_evidence, menu_errors), daemon=True)
                     driver.start()
@@ -160,6 +161,8 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-purpose-') as directory:
                             process.kill()
                             process.wait(timeout=10)
                         driver.join(timeout=5)
+                    for startup_log in home.glob("log/*.log"):
+                        shutil.copyfile(startup_log, output / f"{name}-{startup_log.name}")
                     assert not menu_errors, menu_errors
                     assert len(menu_evidence) == expected_menus, menu_evidence
                     (output / f'{name}-native-menus.json').write_text(json.dumps(menu_evidence))
@@ -183,6 +186,7 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-purpose-') as directory:
                 {'selection': ['click', 'Selection sample bold', '35']}, {'wait': 300},
                 {'selection': ['drag', 'purpose-first USER_ONE', '0', '13']}, {'wait': 200}, {'key': 'Ctrl+C'}, {'wait': 200},
                 {'selection': ['capture', str(output / 'user.txt')]},
+                {'wait': 700},  # Separate this click from the drag: native inputs honor double-click selection.
                 {'selection': ['click', 'purpose-first USER_ONE', '0']}, {'wait': 200}, {'key': 'Shift+Right'}, {'key': 'Shift+Right'}, {'wait': 200}, {'key': 'Ctrl+C'}, {'wait': 200},
                 {'selection': ['capture', str(output / 'user-keyboard.txt')]},
                 {'selection': ['menu', 'purpose-first USER_ONE', '1']}, {'wait': 1000}, {'selection': ['capture', str(output / 'user-menu.txt')]},

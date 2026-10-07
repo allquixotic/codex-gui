@@ -119,7 +119,10 @@
       ],
       "supports_reasoning_summary_parameter": true,
       "supports_reasoning_summaries": true,
-      "supports_reasoning_effort_updates": true
+      "supports_reasoning_effort_updates": true,
+      "model_messages": {
+        "instructions_template": "You are the deterministic Codex GUI test agent."
+      }
     }
   ]
 }

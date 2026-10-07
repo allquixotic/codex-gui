@@ -325,6 +325,7 @@ impl AppController {
                 } else {
                     offset(3)
                 });
+                eprintln!("codex-gui automation: selection points {start:?} -> {end:?}");
                 use slint::platform::{PointerEventButton, WindowEvent};
                 self.automation_dispatch(vec![
                     WindowEvent::PointerPressed {
@@ -392,6 +393,11 @@ impl AppController {
             return;
         };
         let offset = node.cursor(self.window.window(), point, None).0;
+        if std::env::var_os("CODEX_GUI_AUTOMATION").is_some() {
+            eprintln!(
+                "codex-gui automation: selection pointer ({x}, {y}) start={start} offset={offset}"
+            );
+        }
         if start && (!extend || self.transcript_selection.anchor.is_none()) {
             self.transcript_selection.clear();
             self.transcript_selection.anchor = Some((node.clone(), offset));

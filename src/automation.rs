@@ -526,7 +526,21 @@ fn key_events(chord: &str) -> Vec<slint::platform::WindowEvent> {
         })
         .map(slint::SharedString::from)
         .collect::<Vec<_>>();
-    let text = key_text(parts.last().copied().unwrap_or(chord));
+    let key = parts.last().copied().unwrap_or(chord);
+    // Native Slint text shortcuts use lowercase text without Shift, as winit does.
+    let primary = parts.iter().any(|part| {
+        matches!(
+            part.to_ascii_lowercase().as_str(),
+            "ctrl" | "control" | "meta" | "cmd"
+        )
+    });
+    let shifted = parts.iter().any(|part| part.eq_ignore_ascii_case("shift"));
+    let normalized = if primary && !shifted {
+        key.to_ascii_lowercase()
+    } else {
+        key.to_owned()
+    };
+    let text = key_text(&normalized);
     let mut events = modifiers
         .iter()
         .map(|text| WindowEvent::KeyPressed { text: text.clone() })

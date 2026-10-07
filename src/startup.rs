@@ -473,3 +473,23 @@ fn init_tracing(
         .try_init();
     guard
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn stable_mock_catalog_parses_before_windows_smoke() {
+        let catalog: codex_protocol::openai_models::ModelsResponse =
+            serde_json::from_str(include_str!("../dev/mock_models.json")).unwrap();
+        assert_eq!(catalog.models.len(), 1);
+        assert_eq!(catalog.models[0].slug, "mock-model");
+        assert!(
+            catalog.models[0]
+                .model_messages
+                .as_ref()
+                .unwrap()
+                .instructions_template
+                .as_ref()
+                .is_some_and(|text| !text.is_empty())
+        );
+    }
+}

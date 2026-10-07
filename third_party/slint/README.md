@@ -1,6 +1,6 @@
 # Slint 1.18.1 GUI bridges
 
-`i-slint-core` is the crates.io 1.18.1 source package with three changed files.
+`i-slint-core` is the crates.io 1.18.1 source package with four changed files.
 Cargo downloaded-package metadata and its nested lockfile are omitted. Slint
 licenses and copyright notices are preserved unchanged.
 
@@ -8,6 +8,8 @@ licenses and copyright notices are preserved unchanged.
   so every wrapped line can be clicked or hovered. Also expose a narrow
   `rich_text_cursor` bridge to the existing cached shaped layout and draw
   rich selections/carets using native selection geometry.
+- `textlayout/sharedparley/shaping.rs`: preserve rich paragraph byte ranges in
+  the plain text used for native cursor hit-testing and selection painting.
 - `items/text.rs`: internal rich-text anchor/cursor, selection colors and caret
   properties. These add no Slint language API or new layout pass.
 - `item_rendering.rs`: forward these properties through `RenderText`, retaining

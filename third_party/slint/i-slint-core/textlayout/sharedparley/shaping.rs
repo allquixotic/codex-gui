@@ -308,14 +308,22 @@ pub(super) fn create_text_paragraphs(
             }
         }
         PlainOrStyledText::Styled(rich_text) => {
+            // Match styled_text::get_raw_text, including inter-paragraph newlines.
+            // Cursor and selection geometry use byte ranges in this plain text.
+            let mut offset = 0;
             for paragraph in rich_text.paragraphs {
+                if offset > 0 {
+                    offset += 1;
+                }
+                let end = offset + paragraph.text.len();
                 paragraphs.push(paragraph_from_text(
                     font_context,
                     &paragraph.text,
-                    0..0,
+                    offset..end,
                     paragraph.formatting,
                     paragraph.links,
                 ));
+                offset = end;
             }
         }
     };

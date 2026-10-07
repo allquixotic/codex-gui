@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -54,6 +55,8 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-smoke-') as temporary:
                 raise RuntimeError('Mock did not start')
             subprocess.run([str(options.binary.resolve()), '--renderer', 'software'], env=environment, stdout=gui_log, stderr=gui_log, timeout=150, check=True)
         finally:
+            for startup_log in home.glob("log/*.log"):
+                shutil.copyfile(startup_log, options.output / startup_log.name)
             mock.terminate()
             mock.wait(timeout=10)
     bodies = [json.loads(line) for line in requests.read_text().splitlines()]

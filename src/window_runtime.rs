@@ -206,6 +206,27 @@ mod tests {
             );
             assert_eq!(index, 10);
             assert!(caret.height() > 0.0);
+            let (_, first) = i_slint_core::textlayout::sharedparley::rich_text_cursor(
+                ScaleFactor::new(scene.window().scale_factor()),
+                text,
+                item,
+                LogicalPoint::default(),
+                Some(0),
+                scene.window(),
+            );
+            assert_ne!(
+                caret.origin, first.origin,
+                "rich cursor must advance beyond byte zero"
+            );
+            let (hit, _) = i_slint_core::textlayout::sharedparley::rich_text_cursor(
+                ScaleFactor::new(scene.window().scale_factor()),
+                text,
+                item,
+                LogicalPoint::new(caret.min_x() + 0.1, caret.min_y() + caret.height() / 2.0),
+                None,
+                scene.window(),
+            );
+            assert_eq!(hit, 10, "rich glyph hit must round-trip its byte offset");
             ControlFlow::Continue(())
         });
         window.request_redraw();

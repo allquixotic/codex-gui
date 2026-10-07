@@ -252,7 +252,7 @@ component SelectableText inherits Rectangle {
     preferred-height: input.preferred-height;
     clip: true;
 
-    ContextMenuArea {
+    menu := ContextMenuArea {
         Menu {
             MenuItem {
                 title: "Copy";
@@ -311,6 +311,11 @@ component SelectableText inherits Rectangle {
                 color: root.text-color;
                 selection-background-color: Theme.selected;
                 selection-foreground-color: Theme.text;
+            }
+            pointer-event(event) => {
+                if event.button == PointerEventButton.right && event.kind == PointerEventKind.down {
+                    menu.show({ x: self.mouse-x, y: self.mouse-y });
+                }
             }
             scroll-event(event) => {
                 if event.delta-y > 0px { TranscriptState.follow-tail = false; }
