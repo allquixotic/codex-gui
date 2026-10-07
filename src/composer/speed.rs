@@ -193,3 +193,70 @@ mod tests {
         assert_eq!(tier_after_model_change(Some(&model), Some("default")), None);
     }
 }
+
+#[cfg(test)]
+mod native_catalog_tests {
+    use codex_model_provider::create_model_provider;
+    use codex_model_provider_info::ModelProviderInfo;
+    use codex_models_manager::ModelsManagerConfig;
+    use codex_protocol::openai_models::{ModelServiceTier, ModelsResponse};
+
+    #[tokio::test]
+    async fn v5_native_bedrock_astra_and_custom_sol_preserve_tiers() {
+        for (info, slugs) in [
+            (
+                ModelProviderInfo::create_amazon_bedrock_provider(None),
+                vec!["openai.gpt-6-astra"],
+            ),
+            (
+                ModelProviderInfo::create_amazon_bedrock_runtime_provider(None),
+                vec!["us.openai.gpt-6-astra", "global.openai.gpt-6-astra"],
+            ),
+        ] {
+            let provider = create_model_provider(info, None);
+            let manager = provider.models_manager_without_cache(None);
+            for slug in slugs {
+                let model = manager
+                    .get_model_info(slug, &ModelsManagerConfig::default())
+                    .await;
+                assert_eq!(model.slug, slug);
+                assert_eq!(
+                    model.service_tier_for_request(Some("ultrafast".into())),
+                    Some("ultrafast".into())
+                );
+                assert_eq!(
+                    model.service_tier_for_request(Some("priority".into())),
+                    None
+                );
+                assert_eq!(model.service_tier_for_request(None), None);
+                assert_eq!(model.service_tier_for_request(Some("default".into())), None);
+            }
+        }
+        let provider = create_model_provider(
+            ModelProviderInfo::create_amazon_bedrock_provider(None),
+            None,
+        );
+        let manager = provider.models_manager_without_cache(None);
+        let mut sol = manager
+            .get_model_info("openai.gpt-6.1-sol", &ModelsManagerConfig::default())
+            .await;
+        assert!(
+            sol.service_tiers.is_empty(),
+            "Do not guess unreleased Sol tiers"
+        );
+        sol.service_tiers.push(ModelServiceTier {
+            id: "ultrafast".into(),
+            name: "Ultrafast".into(),
+            description: "Provider supplied".into(),
+        });
+        let manager =
+            provider.models_manager_without_cache(Some(ModelsResponse { models: vec![sol] }));
+        let sol = manager
+            .get_model_info("openai.gpt-6.1-sol", &ModelsManagerConfig::default())
+            .await;
+        assert_eq!(
+            sol.service_tier_for_request(Some("ultrafast".into())),
+            Some("ultrafast".into())
+        );
+    }
+}

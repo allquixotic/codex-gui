@@ -3189,6 +3189,7 @@ dependencies = [
  "codex-lmstudio",
  "codex-login",
  "codex-model-provider",
+ "codex-model-provider-info",
  "codex-models-manager",
  "codex-ollama",
  "codex-otel",
@@ -3580,7 +3581,6 @@ dependencies = [
 [[package]]
 name = "codex-model-provider"
 version = "0.161.0"
-source = "git+https://github.com/openai/codex?rev=979011409de0a60b52f179721948e65531d26144#979011409de0a60b52f179721948e65531d26144"
 dependencies = [
  "chrono",
  "codex-agent-identity",

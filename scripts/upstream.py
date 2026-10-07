@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate/update stable-only Codex pins and fetch pristine helper sources."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -42,15 +43,29 @@ def check(check_latest=False):
     assert re.fullmatch(r'rust-v\d+\.\d+\.\d+', pin['tag'])
     assert pin['tag'] == 'rust-v' + pin['version']
     assert re.fullmatch(r'[0-9a-f]{40}', pin['revision'])
-    assert pin['patches'] == [], 'Record any future patch explicitly and revise the build/check contract'
+    patched_crates = {patch['crate'] for patch in pin['patches']}
+    assert patched_crates <= {'codex-model-provider'}, 'Review changes to the minimal patch inventory'
+    for patch in pin['patches']:
+        assert (ROOT / patch['file']).is_file(), patch['file']
     manifest = tomllib.loads((ROOT / 'Cargo.toml').read_text())
     for name, dependency in manifest['workspace']['dependencies'].items():
         if name.startswith('codex-'):
             assert dependency == {'git': REPO, 'rev': pin['revision']}, name
+    overrides = manifest.get('patch', {}).get(REPO, {})
+    assert set(overrides) == patched_crates, 'Patch inventory must match Cargo overrides'
+    for patch in pin['patches']:
+        destination = ROOT / '.patched' / patch['crate']
+        assert overrides[patch['crate']] == {'path': f".patched/{patch['crate']}"}
+        if destination.exists():
+            provenance = json.loads((destination / 'patch-provenance.json').read_text())
+            assert provenance == {'revision': pin['revision'], 'patchSha256': hashlib.sha256((ROOT / patch['file']).read_bytes()).hexdigest()}, 'Run upstream.py prepare to refresh generated sources'
     lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())
     for package in lock['package']:
         if package['name'].startswith('codex-') and package['name'] != 'codex-gui':
-            assert package['source'] == f"git+{REPO}?rev={pin['revision']}#{pin['revision']}", package['name']
+            if package['name'] in patched_crates:
+                assert 'source' not in package, 'Patched crate must use the verified generated path'
+            else:
+                assert package['source'] == f"git+{REPO}?rev={pin['revision']}#{pin['revision']}", package['name']
             assert package['version'] == pin['version'], package['name']
     forbidden = {'codex-cli', 'codex-tui', 'codex-exec'}
     assert not forbidden.intersection(p['name'] for p in lock['package'])
@@ -58,11 +73,12 @@ def check(check_latest=False):
     assert toolchain['toolchain']['channel'] == pin['rust']
     if check_latest:
         assert (pin['tag'], pin['revision']) == latest(), 'Run python scripts/upstream.py update for latest stable'
-    print(f"Codex {pin['tag']} ({pin['revision']}), no Codex source patches")
+    print(f"Codex {pin['tag']} ({pin['revision']}), patch inventory: {sorted(patched_crates)}")
 
 
-def prepare():
-    check()
+def prepare(validate_lock=True):
+    if validate_lock:
+        check()
     pin = metadata()
     directory = ROOT / '.upstream'
     directory.mkdir(exist_ok=True)
@@ -74,10 +90,14 @@ def prepare():
     assert revision == pin['revision'], 'Release tag moved; review before accepting'
     run('git', 'checkout', '--detach', pin['revision'], cwd=directory)
     assert not run('git', 'status', '--porcelain', cwd=directory), 'Helper sources must remain pristine'
+    if pin['patches']:
+        from materialize_provider import materialize
+        materialize()
     print(directory / 'codex-rs' / 'Cargo.toml')
 
 
 def update():
+    previous = metadata()
     tag, revision = latest()
     base = f'https://raw.githubusercontent.com/openai/codex/{revision}'
     stable = tomllib.loads(fetch(base + '/codex-rs/Cargo.toml').decode())
@@ -99,8 +119,9 @@ def update():
     (ROOT / 'rust-toolchain.toml').write_bytes(toolchain_bytes)
     (ROOT / 'third_party/v8' / f"rusty_v8_{v8.replace('.', '_')}_release_manifests.sha256").write_bytes(sums)
     pin = dict(repository=REPO, tag=tag, revision=revision, version=version,
-               rust=toolchain['toolchain']['channel'], v8=v8, patches=[])
+               rust=toolchain['toolchain']['channel'], v8=v8, patches=previous['patches'])
     (ROOT / 'upstream.json').write_text(json.dumps(pin, indent=2) + '\n')
+    prepare(validate_lock=False)
     subprocess.run(['cargo', 'update', '--workspace'], cwd=ROOT, check=True)
     check()
     print('Review manifest/lockfile, upstream patches and licenses; adapt GUI APIs; run development checks and Windows tests before committing.')

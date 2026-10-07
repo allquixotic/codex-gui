@@ -5,7 +5,7 @@ Reliable conversation scrolling, Windows presentation, web/file link actions, in
 Broader GUI contract: repository `GUI.md`.
 
 ## §C CONSTRAINTS
-- Independent allquixotic/codex-gui; Apache-2.0; latest stable Codex release only, immutable Git pin, zero Codex patches.
+- Independent allquixotic/codex-gui; Apache-2.0; latest stable Codex release only, immutable Git pin, minimal documented Codex patches.
 - Native Slint 1.18.1; bound transcript memory; no idle repaint polling.
 - Windows x64 release first; macOS release builds deferred.
 - Never run GUI tests or launch this project's GUI on Sean's Mac unless the user explicitly says "test the GUI on this Mac"; use Windows hosts.
@@ -59,3 +59,5 @@ B8|2026-10-07|Async question metadata rendered as duplicate passive markdown; no
 B9|2026-10-07|Extraction omitted workspace Clippy test settings; copied deny lints reject existing test assertions|Own minimal Clippy config retains test assertions and lock-guard checks; one-time migration
 
 B10|2026-10-07|Windows Cargo checkout contains a 266-character upstream snapshot path even when TUI is not linked|Short Cargo cache path plus Git core.longpaths in Windows CI; environment constraint, no new invariant
+
+B11|2026-10-07|Stable Bedrock catalog normalization clears all speed tiers; GUI-only fixtures miss loss of native Astra Ultrafast|V5; minimal provider catalog backport and native Mantle/Runtime/custom Sol regression
