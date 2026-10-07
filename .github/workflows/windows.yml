@@ -14,6 +14,8 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 180
     env:
+      # Upstream's long snapshot filenames are checked out even when TUI is not built.
+      CARGO_HOME: D:/c
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -22,6 +24,8 @@ jobs:
       STABLE_GIT_COMMIT: ${{ github.sha }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Enable Git long paths
+        run: git config --global core.longpaths true
       - name: Verify stable upstream pin
         run: python scripts/upstream.py check --latest
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582

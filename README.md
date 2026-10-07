@@ -44,6 +44,11 @@ Windows workflow toolchain input. Changes on `main`/`master` are never a depende
 
 ## Build and run
 
+On Windows, enable `git config --global core.longpaths true` and use a short
+Cargo cache path (for example `$env:CARGO_HOME = 'C:/c'` in PowerShell) if Git
+reports a path-length error while checking out upstream. CI sets both.
+
+
 ```bash
 cd codex-gui
 cargo run -p codex-gui                 # opens the New Tab page
