@@ -28,6 +28,15 @@ jobs:
         run: git config --global core.longpaths true
       - name: Verify stable upstream pin
         run: python scripts/upstream.py check --latest
+      - name: Restore Rust build cache
+        id: rust-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: |
+            D:/c
+            target
+          key: windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+          restore-keys: windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
       - name: Prepare stable provider backport
         run: python scripts/upstream.py prepare
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
@@ -41,11 +50,20 @@ jobs:
       - name: Formatting
         run: cargo fmt --all -- --check
       - name: Windows tests including software-rendered scrolling and wrapped-link fixture
+        id: tests
         run: cargo test --locked --release --target x86_64-pc-windows-msvc --lib
       - name: Build GUI
         run: cargo build --locked --release --target x86_64-pc-windows-msvc --bin codex-gui
       - name: Build upstream runtime helpers
         run: ./scripts/build-helpers.ps1
+      - name: Save Rust build cache
+        if: always() && steps.tests.outcome != 'skipped' && !cancelled()
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: |
+            D:/c
+            target
+          key: ${{ steps.rust-cache.outputs.cache-primary-key }}
       - name: Windows GUI smoke test (mock provider, suggested and free-text answers)
         run: python dev/windows-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
       - name: Upload smoke-test evidence

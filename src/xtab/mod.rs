@@ -1490,7 +1490,7 @@ mod tests {
         let home = PathBuf::from("/Users/me");
         assert_eq!(
             abbreviate_home(Path::new("/Users/me/dev/repo"), Some(&home)),
-            "~/dev/repo"
+            format!("~{}dev/repo", std::path::MAIN_SEPARATOR)
         );
         assert_eq!(abbreviate_home(Path::new("/Users/me"), Some(&home)), "~");
         assert_eq!(

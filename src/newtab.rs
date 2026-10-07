@@ -1533,8 +1533,10 @@ mod tests {
         assert!(files_are_local(&ConnectionTarget::Embedded));
         assert!(files_are_local(&ConnectionTarget::Remote(
             RemoteAppServerEndpoint::UnixSocket {
-                socket_path: AbsolutePathBuf::from_absolute_path_checked("/tmp/codex.sock")
-                    .unwrap_or_else(|err| panic!("{err}")),
+                socket_path: AbsolutePathBuf::from_absolute_path_checked(
+                    codex_utils_absolute_path::test_support::test_path_buf("/tmp/codex.sock"),
+                )
+                .unwrap_or_else(|err| panic!("{err}")),
             }
         )));
         assert!(!files_are_local(&ConnectionTarget::Remote(

@@ -1797,7 +1797,10 @@ mod tests {
         ));
         assert_eq!(
             system.provider_origin,
-            Some("system config /etc/codex/config.toml".to_string())
+            Some(format!(
+                "system config {}",
+                abs("/etc/codex/config.toml").display()
+            ))
         );
         assert!(!system.provider_locked);
     }

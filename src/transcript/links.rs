@@ -329,10 +329,16 @@ mod tests {
                 line: Some(7)
             }
         );
+        // A file URL must name a drive (or UNC host) to be local on Windows.
+        let (file_url, file_path) = if cfg!(windows) {
+            ("file:///C:/tmp/a%20b.txt", r"C:\tmp\a b.txt")
+        } else {
+            ("file:///tmp/a%20b.txt", "/tmp/a b.txt")
+        };
         assert_eq!(
-            classify_link("file:///tmp/a%20b.txt", cwd),
+            classify_link(file_url, cwd),
             LinkTarget::File {
-                path: PathBuf::from("/tmp/a b.txt"),
+                path: PathBuf::from(file_path),
                 line: None
             }
         );
@@ -434,9 +440,15 @@ mod tests {
 
     #[test]
     fn display_paths_are_relative_to_cwd() {
-        let cwd = Path::new("/repo");
-        assert_eq!(display_path("/repo/src/a.rs", cwd), "src/a.rs");
-        assert_eq!(display_path("src/a.rs", cwd), "src/a.rs");
-        assert_eq!(display_path("/other/a.rs", cwd), "/other/a.rs");
+        use codex_utils_absolute_path::test_support::test_path_buf;
+        let cwd = test_path_buf("/repo");
+        let inside = cwd.join("src").join("a.rs").display().to_string();
+        let other = test_path_buf("/other/a.rs").display().to_string();
+        assert_eq!(
+            display_path(&inside, &cwd),
+            Path::new("src").join("a.rs").display().to_string()
+        );
+        assert_eq!(display_path("src/a.rs", &cwd), "src/a.rs");
+        assert_eq!(display_path(&other, &cwd), other);
     }
 }

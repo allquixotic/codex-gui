@@ -1838,7 +1838,7 @@ mod tests {
             "updatedAt": 0,
             "status": {"type": "idle"},
             "path": null,
-            "cwd": "/repo",
+            "cwd": codex_utils_absolute_path::test_support::test_path_buf("/repo"),
             "cliVersion": "0",
             "source": source,
             "gitInfo": null,

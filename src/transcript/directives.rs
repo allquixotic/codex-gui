@@ -387,10 +387,15 @@ mod tests {
 
     #[test]
     fn strips_git_directives_and_rewrites_code_comments() {
-        let cwd = Path::new("/repo");
-        let source = "Done.\n::git-stage{cwd=\"/repo\"} ::git-commit{cwd=\"/repo\"}\n::code-comment{title=\"Bug\" body=\"Fix it\" file=\"/repo/src/a.rs\" start=3 end=5 priority=1}\n";
+        let cwd = codex_utils_absolute_path::test_support::test_path_buf("/repo");
+        let file = cwd.join("src").join("a.rs");
+        let source = format!(
+            "Done.\n::git-stage{{cwd=\"{cwd}\"}} ::git-commit{{cwd=\"{cwd}\"}}\n::code-comment{{title=\"Bug\" body=\"Fix it\" file=\"{file}\" start=3 end=5 priority=1}}\n",
+            cwd = cwd.display(),
+            file = file.display(),
+        );
         assert_eq!(
-            visible_markdown(source, cwd),
+            visible_markdown(&source, &cwd),
             "Done.\n\n- [P1] Bug — src/a.rs:3-5\n  Fix it"
         );
     }

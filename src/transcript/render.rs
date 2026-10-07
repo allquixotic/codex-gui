@@ -1569,14 +1569,15 @@ mod tests {
 
     #[test]
     fn patch_rows_have_counts_and_targets() {
+        let repo = codex_utils_absolute_path::test_support::test_path_buf("/repo");
         let changes = vec![
             FileUpdateChange {
-                path: "/repo/b.txt".to_string(),
+                path: repo.join("b.txt").display().to_string(),
                 kind: PatchChangeKind::Add,
                 diff: "x\ny\n".to_string(),
             },
             FileUpdateChange {
-                path: "/repo/a.txt".to_string(),
+                path: repo.join("a.txt").display().to_string(),
                 kind: PatchChangeKind::Delete,
                 diff: "z\n".to_string(),
             },
@@ -1585,7 +1586,7 @@ mod tests {
             &changes,
             PatchApplyStatus::Completed,
             &std::collections::BTreeSet::from([0]),
-            Path::new("/repo"),
+            &repo,
         );
         let summary: Vec<(BlockKind, String, i32, i32)> = blocks
             .iter()
@@ -1600,10 +1601,7 @@ mod tests {
             ]
         );
         assert_eq!(blocks[1].target, "");
-        assert_eq!(
-            blocks[2].target,
-            PathBuf::from("/repo/b.txt").display().to_string()
-        );
+        assert_eq!(blocks[2].target, repo.join("b.txt").display().to_string());
         assert!(blocks[2].expanded);
         assert_eq!(blocks[2].lines.len(), 2);
     }

@@ -144,6 +144,10 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn workspace(roots: &[&str], network_access: bool) -> SandboxPolicy {
+        let roots: Vec<PathBuf> = roots
+            .iter()
+            .map(|root| codex_utils_absolute_path::test_support::test_path_buf(root))
+            .collect();
         match serde_json::from_value(serde_json::json!({
             "type": "workspaceWrite",
             "writableRoots": roots,
