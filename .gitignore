@@ -1,0 +1,7 @@
+/target/
+/.upstream/
+/dist/
+*.pdb
+.DS_Store
+__pycache__/
+*.py[cod]
