@@ -1202,7 +1202,9 @@ of this feasibility investigation.
   Necessary backend crates and runtime helpers remain; static embedding preserves
   approvals, shell/file tools, sandboxing, Code Mode and native Bedrock tiers.
 - Helpers are compiled unchanged from an ignored, verified checkout of exactly
-  the pinned stable tag. They are packaged beside the GUI; no CLI installation
+  the pinned stable tag. A small consumer helper manifest reuses our root lockfile and pinned backend
+  libraries without resolving the full upstream workspace. They are packaged
+  beside the GUI; no CLI installation
   or upstream repository clone is needed at runtime.
 - Mirror stable upstream's required Cargo transport patches in the consumer
   manifest. Carry the existing one-line Slint wrapped-link hit fix with its own
@@ -1256,7 +1258,8 @@ width, and debounce adjustments for ten seconds. After it settles, shorten the
 cached tooltip summaries for currently visible threads in a background request
 without re-reading conversation context. Generated labels must fit the available
 row width without ellipses. Discard stale results after newer requests, resizes
-or manual renames. This feature ships after the currently building 0.2.0 release.
+or manual renames. This feature ships in 0.3.0. The earlier 0.2.0 build passed GUI compilation
+but failed helper packaging and was not published.
 
 
 ## 23. Conversation text selection (0.3.0)
@@ -1274,4 +1277,4 @@ documented in third_party/slint/README.md. Selection state covers materialized
 visible text and its endpoints, never the full conversation history, and is
 cleared when switching transcripts. Windows verification covers wrapped rich
 selection rendering, real drag/Shift-arrow input and clipboard contents. This
-ships together with section 22 after 0.2.0.
+ships together with section 22 in 0.3.0.

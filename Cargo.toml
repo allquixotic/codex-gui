@@ -132,9 +132,17 @@ pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
 
 [workspace]
+members = ["runtime-helpers"]
+default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
+codex-code-mode-host = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-http-client = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-otel-trace-websocket = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-windows-sandbox = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-utils-process = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-utils-pty = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
 codex-rollout-trace = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
 codex-core = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
 codex-model-provider-info = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }

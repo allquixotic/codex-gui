@@ -34,7 +34,8 @@ The GUI owns its process bootstrap and uses public upstream APIs. It does not bu
 Codex's CLI, TUI or exec frontend.
 
 The three runtime helpers are built unchanged from that same stable tag by
-`scripts/build-helpers.ps1`, using an ignored `.upstream/` checkout. This checkout
+`scripts/build-helpers.ps1`, using an ignored `.upstream/` checkout and the small `runtime-helpers/` manifest
+with our root lockfile; the full upstream workspace is never built. This checkout
 is only a build input: product code never lives in or modifies upstream's tree.
 The package does not need a separately installed Codex CLI.
 

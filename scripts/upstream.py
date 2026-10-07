@@ -59,6 +59,10 @@ def check(check_latest=False):
         if destination.exists():
             provenance = json.loads((destination / 'patch-provenance.json').read_text())
             assert provenance == {'revision': pin['revision'], 'patchSha256': hashlib.sha256((ROOT / patch['file']).read_bytes()).hexdigest()}, 'Run upstream.py prepare to refresh generated sources'
+    helpers = tomllib.loads((ROOT / 'runtime-helpers/Cargo.toml').read_text())
+    assert helpers['package']['version'] == pin['version'], 'Helper metadata must match stable backend'
+    for binary in helpers['bin']:
+        assert binary['path'].startswith('../.upstream/codex-rs/'), 'Helpers must use pristine stable entrypoints'
     lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())
     for package in lock['package']:
         if package['name'].startswith('codex-') and package['name'] != 'codex-gui':
@@ -116,6 +120,8 @@ def update():
         manifest, count = re.subn(pattern, lambda _: replacement, manifest)
         assert count, f'Review new upstream patch: {name}'
     (ROOT / 'Cargo.toml').write_text(manifest)
+    helper_manifest = ROOT / 'runtime-helpers/Cargo.toml'
+    helper_manifest.write_text(helper_manifest.read_text().replace(f'version = "{previous["version"]}"', f'version = "{version}"'))
     (ROOT / 'rust-toolchain.toml').write_bytes(toolchain_bytes)
     (ROOT / 'third_party/v8' / f"rusty_v8_{v8.replace('.', '_')}_release_manifests.sha256").write_bytes(sums)
     pin = dict(repository=REPO, tag=tag, revision=revision, version=version,

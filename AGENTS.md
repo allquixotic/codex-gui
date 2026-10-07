@@ -68,7 +68,11 @@ all working features; `SPEC.md` records focused invariants and regressions.
   Cargo checks out upstream's long snapshot filenames even without linking TUI.
 - Ship `codex-gui.exe`, `codex-code-mode-host.exe`,
   `codex-windows-sandbox-setup.exe` and `codex-command-runner.exe` together.
-  Helpers must use the same stable backend as the GUI.
+  Helpers must use the same stable backend as the GUI. `runtime-helpers/Cargo.toml`
+  compiles pristine upstream entrypoints using our root lockfile and exact Git
+  dependencies. Never build against the full upstream workspace lockfile.
+  Keep helper package version/source paths and Windows API features in sync
+  when updating the stable backend.
 - Keep Apache LICENSE, upstream attribution in NOTICE, third-party licenses,
   user guide and exact build/pin metadata in packages.
 - Publish from a successful workflow for the exact commit; verify GitHub asset
