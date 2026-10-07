@@ -25,8 +25,8 @@ explains everyday use; [AGENTS.md](AGENTS.md) describes maintenance.
 
 Codex GUI 0.2.0 embeds **Codex 0.161.0**, stable tag `rust-v0.161.0`, pinned to
 `979011409de0a60b52f179721948e65531d26144`. `upstream.json`, the Cargo Git dependencies
-and `Cargo.lock` record the exact backend. One minimal provider catalog backport
-restores Bedrock Astra Ultrafast and preserves custom catalogs’ tiers; see
+and `Cargo.lock` record the exact backend. One minimal Bedrock tier backport
+across the provider and request builder restores Bedrock Astra Ultrafast and preserves custom catalogs’ tiers; see
 [patches/README.md](patches/README.md). Generated patched sources are ignored.
 The GUI owns its process bootstrap and uses public upstream APIs. It does not build
 Codex's CLI, TUI or exec frontend.
@@ -53,7 +53,7 @@ reports a path-length error while checking out upstream. CI sets both.
 
 ```bash
 cd codex-gui
-python scripts/upstream.py prepare     # stable source + minimal catalog patch
+python scripts/upstream.py prepare     # stable source + minimal tier backport
 cargo run -p codex-gui                 # opens the New Tab page
 cargo run -p codex-gui -- ~/src/proj   # starts a thread in a folder
 cargo run -p codex-gui -- --resume <thread-id>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate/update stable-only Codex pins and fetch pristine helper sources."""
+"""Validate stable-only pins; fetch pristine source and materialize minimal patches."""
 import argparse
 import hashlib
 import json
@@ -44,7 +44,7 @@ def check(check_latest=False):
     assert pin['tag'] == 'rust-v' + pin['version']
     assert re.fullmatch(r'[0-9a-f]{40}', pin['revision'])
     patched_crates = {patch['crate'] for patch in pin['patches']}
-    assert patched_crates <= {'codex-model-provider'}, 'Review changes to the minimal patch inventory'
+    assert patched_crates <= {'codex-model-provider', 'codex-core'}, 'Review changes to the minimal patch inventory'
     for patch in pin['patches']:
         assert (ROOT / patch['file']).is_file(), patch['file']
     manifest = tomllib.loads((ROOT / 'Cargo.toml').read_text())
@@ -91,7 +91,7 @@ def prepare(validate_lock=True):
     run('git', 'checkout', '--detach', pin['revision'], cwd=directory)
     assert not run('git', 'status', '--porcelain', cwd=directory), 'Helper sources must remain pristine'
     if pin['patches']:
-        from materialize_provider import materialize
+        from materialize_upstream import materialize
         materialize()
     print(directory / 'codex-rs' / 'Cargo.toml')
 

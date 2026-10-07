@@ -3,7 +3,7 @@
 Status: standalone `allquixotic/codex-gui` repository, product version 0.2.0.
 The GUI source lives at the repository root (`src/`, `ui/`, `assets/`).
 It embeds stable Codex 0.161.0 at immutable release commit
-`979011409de0a60b52f179721948e65531d26144`, with one minimal Bedrock provider catalog backport (see `patches/README.md`).
+`979011409de0a60b52f179721948e65531d26144`, with one minimal Bedrock tier backport (see `patches/README.md`).
 Windows x64 builds are produced by GitHub Actions on pushes to `main`.
 macOS release builds remain deferred; GUI launches/tests on Sean's Mac remain prohibited.
 
@@ -1191,8 +1191,9 @@ of this feasibility investigation.
 - Upstream crates come from public `openai/codex` Git dependencies, pinned to the
   immutable commit of GitHub's **latest stable release**, never main/master or
   a prerelease. Baseline is `rust-v0.161.0`, commit `979011409de0a60b52f179721948e65531d26144`.
-- One catalog backport restores native Bedrock Astra Ultrafast and preserves
-  custom provider tiers absent from stable 0.161.0. Generated patched provider
+- One Bedrock tier backport restores native Bedrock Astra Ultrafast and preserves
+  custom provider tiers absent from stable 0.161.0. It also restores request-tier
+  forwarding for advertised Bedrock tiers. Generated patched provider/core
   source is ignored; all other crates are unmodified stable Git dependencies.
   Product bootstrap uses public arg0 dispatch, retains
   helper aliases through runtime shutdown, and leaves Slint on the main thread.

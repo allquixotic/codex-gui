@@ -10,6 +10,11 @@
       "crate": "codex-model-provider",
       "file": "patches/bedrock-service-tiers.patch",
       "reason": "Preserve native Bedrock Astra Ultrafast and custom catalog tiers missing from stable 0.161.0"
+    },
+    {
+      "crate": "codex-core",
+      "file": "patches/bedrock-request-tier.patch",
+      "reason": "Forward only catalog-advertised Bedrock service tiers instead of clearing every request tier"
     }
   ]
 }

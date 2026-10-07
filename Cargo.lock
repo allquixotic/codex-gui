@@ -2622,7 +2622,6 @@ dependencies = [
 [[package]]
 name = "codex-core"
 version = "0.161.0"
-source = "git+https://github.com/openai/codex?rev=979011409de0a60b52f179721948e65531d26144#979011409de0a60b52f179721948e65531d26144"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -3182,6 +3181,7 @@ dependencies = [
  "codex-cloud-config",
  "codex-config",
  "codex-context-fragments",
+ "codex-core",
  "codex-exec-server",
  "codex-feedback",
  "codex-file-search",
@@ -3195,6 +3195,7 @@ dependencies = [
  "codex-otel",
  "codex-protocol",
  "codex-rollout",
+ "codex-rollout-trace",
  "codex-state",
  "codex-utils-absolute-path",
  "codex-utils-cli",
@@ -3231,6 +3232,7 @@ dependencies = [
  "uuid",
  "webbrowser",
  "windows-sys 0.61.2",
+ "wiremock",
 ]
 
 [[package]]

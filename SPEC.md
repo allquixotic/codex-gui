@@ -25,7 +25,7 @@ V2: Lost Windows surface pixels ! repaint next frame without resize; idle ! sche
 V3: Link hit ! match shaped glyph and clipping; wrapped web/file links ! retain exact destination.
 V4: Copy/tooltip ! preserve file line and resolve relative path; browser action ! encode file URL.
 
-V5: Speed choices ! follow provider catalog and feature requirements; Standard ! send explicit default; model switch ! reset unsupported tier; resume/fork ! preserve reported tier.
+V5: Speed choices and actual request tiers ! follow provider catalog and feature requirements; Standard ! send explicit default; model switch ! reset unsupported tier; resume/fork ! preserve reported tier.
 
 V6: Async questions ! show choices + free text; no send before Submit; exact message/index reply identity; turn end ! retain unanswered fields; rejected send ! preserve drafts; history replay ! deduplicate; transcript ! render question once.
 
@@ -63,3 +63,5 @@ B10|2026-10-07|Windows Cargo checkout contains a 266-character upstream snapshot
 B11|2026-10-07|Stable Bedrock catalog normalization clears all speed tiers; GUI-only fixtures miss loss of native Astra Ultrafast|V5; minimal provider catalog backport and native Mantle/Runtime/custom Sol regression
 
 B12|2026-10-07|Nine inherited Windows test failures use Unix-only absolute paths, file URLs or displayed separators|Use upstream native test paths and platform-correct URL/display expectations; existing path invariants suffice
+
+B13|2026-10-07|Stable core request builder independently discards all Bedrock tiers even after catalog normalization is fixed|V5; minimal core expression backport and actual HTTP-body regression for Mantle/Runtime, native/future models and unsupported tiers

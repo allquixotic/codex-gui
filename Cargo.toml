@@ -123,6 +123,9 @@ ignored = ["i-slint-common"]
 slint-build = { workspace = true, features = ["compat-1-18"] }
 
 [dev-dependencies]
+wiremock = "0.6"
+codex-rollout-trace = { workspace = true }
+codex-core = { workspace = true }
 codex-model-provider-info = { workspace = true }
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
@@ -131,6 +134,8 @@ tempfile = { workspace = true }
 resolver = "2"
 
 [workspace.dependencies]
+codex-rollout-trace = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-core = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
 codex-model-provider-info = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
 anyhow = "1"
 arboard = { version = "3", features = ["wayland-data-control"] }
@@ -253,3 +258,4 @@ tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev 
 # Generated from the pinned stable source + the minimal, reviewed patch below.
 [patch."https://github.com/openai/codex"]
 codex-model-provider = { path = ".patched/codex-model-provider" }
+codex-core = { path = ".patched/codex-core" }

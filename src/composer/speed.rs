@@ -260,3 +260,7 @@ mod native_catalog_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "speed_transport_tests.rs"]
+mod transport_tests;

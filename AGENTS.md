@@ -14,14 +14,15 @@ all working features; `SPEC.md` records focused invariants and regressions.
 - Update with `python scripts/upstream.py update`; review release API changes,
   Cargo transport patches, toolchain, V8 digests, lockfile, and license notices.
   CI's toolchain input must also match `rust-toolchain.toml` after an update.
-- Prefer public upstream APIs and GUI-side adapters. The one current Codex patch is the Bedrock provider catalog backport in
-  patches/; `.patched/` contains ignored generated sources. Before Cargo commands,
+- Prefer public upstream APIs and GUI-side adapters. The Bedrock backport has
+  two small patches: provider catalogs and the core request builder. `patches/`
+  is the inventory; `.patched/` is ignored generated source. Before Cargo commands,
   run `python scripts/upstream.py prepare`. For each patch document its stable base,
   reason, application/verification process and removal condition, keep it minimal,
   and update pin validation consistently. Remove the backport when a stable release
   provides it and V5 native provider tests pass. Helpers stay pristine. Never restore a fork.
-- `.upstream/` is ignored, pristine stable source used only to build runtime
-  helpers. Do not add product code there or commit its contents.
+- `.upstream/` is ignored, pristine stable source for runtime helpers and
+  materializing the backport. Do not add product code there or commit its contents.
 - The Slint vendor directory carries one wrapped-link hit-testing fix; preserve
   its licenses. Remove the patch only after upstream fixes it and Windows
   rendering/link tests verify it. GUI crates do not link CLI/TUI/exec frontends.

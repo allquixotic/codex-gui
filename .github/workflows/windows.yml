@@ -37,7 +37,7 @@ jobs:
             target
           key: windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
           restore-keys: windows-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
-      - name: Prepare stable provider backport
+      - name: Prepare stable Bedrock backport
         run: python scripts/upstream.py prepare
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
         with:
