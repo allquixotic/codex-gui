@@ -20,6 +20,10 @@ jobs:
       CARGO_INCREMENTAL: 0
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
       CARGO_PROFILE_RELEASE_DEBUG: 0
+      # Whole-program LTO takes ~50 minutes per executable on hosted runners.
+      # Keep normal optimized static builds, with bounded compilation memory.
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 16
       LIBSQLITE3_FLAGS: SQLITE_DISABLE_INTRINSIC
       STABLE_GIT_COMMIT: ${{ github.sha }}
     steps:

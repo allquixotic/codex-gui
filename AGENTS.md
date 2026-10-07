@@ -64,7 +64,10 @@ all working features; `SPEC.md` records focused invariants and regressions.
 
 - `.github/workflows/windows.yml` builds Windows x64 ZIP/SHA-256 artifacts on
   pushes to `main` and pull requests. Keep it usable on ordinary hosted runners.
-  Keep the short Windows Cargo cache path and Git `core.longpaths` setting:
+  Hosted Windows release builds disable whole-program LTO and use 16 codegen
+  units to bound compilation time/memory; ordinary release optimization and
+  static backend linking remain enabled. Keep the short Windows Cargo cache
+  path and Git `core.longpaths` setting:
   Cargo checks out upstream's long snapshot filenames even without linking TUI.
 - Ship `codex-gui.exe`, `codex-code-mode-host.exe`,
   `codex-windows-sandbox-setup.exe` and `codex-command-runner.exe` together.
