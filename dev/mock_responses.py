@@ -16,6 +16,7 @@ with `--write-config DIR`). The reply depends on the last user message:
     "patch"     proposes an apply_patch edit (exercises file approvals)
     "plan"      updates the plan ("plan slow": the follow-up streams slowly)
     "ask"       calls request_user_input (if offered)
+    "askasync"  asks suggested-choice and free-text questions asynchronously
     "tab"       calls the codex_gui cross-tab tools (if offered)
     "tabsend X" lists open tabs, then sends X to the first other tab and
                 waits for its reply ("tabpost X" does not wait;
@@ -238,6 +239,14 @@ def plan_events(body, text):
                 ],
             },
         )
+    elif lowered.startswith("askasync") and "request_user_input_async" in names:
+        yield function_call(
+            "request_user_input_async",
+            {"questions": [
+                {"title": "How should we handle the merge request?", "options": ["Keep it in draft", "Mark it ready"]},
+                {"title": "Which Rally story or SMP ticket should the merge request reference?"},
+            ]},
+        )
     elif lowered.startswith("ask") and "request_user_input" in names:
         yield function_call(
             "request_user_input",
@@ -413,6 +422,7 @@ def followup_events(body):
 
 
 class Handler(BaseHTTPRequestHandler):
+    request_log = None
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):  # noqa: N802
@@ -443,6 +453,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
+        if self.request_log:
+            with open(self.request_log, "a", encoding="utf-8") as log:
+                log.write(json.dumps(body) + "\n")
         text = last_user_text(body)
         if wants_json_schema(body):
             events = structured_events(body)
@@ -466,10 +479,14 @@ class Handler(BaseHTTPRequestHandler):
 
 def write_config(codex_home, port):
     os.makedirs(codex_home, exist_ok=True)
+    from pathlib import Path
+    catalog = os.path.join(codex_home, "models.json")
+    Path(catalog).write_bytes(Path(__file__).with_name("mock_models.json").read_bytes())
     with open(os.path.join(codex_home, "config.toml"), "w") as f:
         f.write(
             f"""model = "mock-model"
 model_provider = "mock"
+model_catalog_json = {json.dumps(os.path.abspath(catalog))}
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 
@@ -491,9 +508,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=18080)
     parser.add_argument("--write-config", metavar="CODEX_HOME")
+    parser.add_argument("--request-log", help="Record mock requests as JSONL for end-to-end assertions")
     args = parser.parse_args()
     if args.write_config:
         write_config(args.write_config, args.port)
+    Handler.request_log = args.request_log
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     sys.stderr.write(f"mock responses server on http://127.0.0.1:{args.port}/v1\n")
     server.serve_forever()

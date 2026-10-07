@@ -39,7 +39,8 @@ release, rejects prereleases, updates immutable pins and toolchain/V8 metadata, 
 refreshes the lockfile. Review upstream Cargo patches, licenses, and API changes;
 then adapt the GUI and verify before committing. `python scripts/upstream.py check`
 validates local pin consistency; `--latest` also verifies the latest stable release.
-CI refuses an outdated pin. Changes on `main`/`master` are never a dependency target.
+CI refuses an outdated pin. After a toolchain update, also update the matching
+Windows workflow toolchain input. Changes on `main`/`master` are never a dependency target.
 
 ## Build and run
 

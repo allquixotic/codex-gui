@@ -234,7 +234,6 @@ fn render_item(entry: &ItemEntry, ctx: RenderContext<'_>) -> Vec<Block> {
         ThreadItem::AgentMessage {
             text,
             memory_citation,
-            questions,
             ..
         } => {
             let style = BlockStyle {
@@ -269,29 +268,6 @@ fn render_item(entry: &ItemEntry, ctx: RenderContext<'_>) -> Vec<Block> {
                     })
                     .collect();
                 block.rich = Some(format!("Memory: {}", sources.join(", ")));
-                block.message = true;
-                blocks.push(block);
-            }
-            if let Some(questions) = questions.as_ref().filter(|questions| !questions.is_empty()) {
-                let mut block = Block::new(BlockKind::Paragraph);
-                block.tone = Tone::Muted;
-                block.rich = Some(
-                    questions
-                        .iter()
-                        .map(|question| {
-                            let options = question
-                                .options
-                                .as_ref()
-                                .map(|options| format!(" ({})", options.join(" / ")))
-                                .unwrap_or_default();
-                            format!(
-                                "- {}",
-                                markdown::escape_text(&format!("{}{options}", question.title))
-                            )
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n"),
-                );
                 block.message = true;
                 blocks.push(block);
             }
@@ -829,7 +805,9 @@ pub(crate) fn user_message_parts(content: &[UserInput]) -> (String, Vec<Line>) {
     let mut chips = Vec::new();
     for input in content {
         match input {
-            UserInput::Text { text, .. } => texts.push(sanitize_user_text(text)),
+            UserInput::Text { text, .. } => texts.push(sanitize_user_text(
+                &crate::async_questions::display(text).unwrap_or_else(|| text.clone()),
+            )),
             UserInput::Image { .. } => chips.push(Line::new("Image", 0)),
             UserInput::LocalImage { path, .. } => chips.push(Line {
                 text: path
@@ -1649,6 +1627,30 @@ mod tests {
         assert_eq!(text, "hi there");
         let labels: Vec<String> = chips.into_iter().map(|chip| chip.text).collect();
         assert_eq!(labels, vec!["shot.png".to_string(), "@repo".to_string()]);
+    }
+
+    #[test]
+    fn v6_async_question_text_renders_once_and_replies_hide_wire_markup() {
+        let item: ThreadItem = serde_json::from_value(serde_json::json!({
+            "type": "agentMessage", "id": "call", "text": "Which ticket?",
+            "questions": [{"title": "Which ticket?", "options": null}]
+        }))
+        .expect("async message");
+        let entry = item_entry(item, true);
+        let blocks = render_item(&entry, ctx());
+        assert_eq!(
+            blocks.len(),
+            1,
+            "Question metadata belongs in the answer card, not a duplicate transcript list"
+        );
+        let reply = crate::async_questions::encode(&[crate::async_questions::Reply {
+            question_item_id: crate::async_questions::question_id("call", 0),
+            question: "Which ticket?".into(),
+            answer: "SMP-42".into(),
+        }])
+        .expect("reply");
+        let (text, _) = user_message_parts(&[crate::session::text_input(reply)]);
+        assert_eq!(text, "Which ticket?\nSMP-42");
     }
 
     fn item_entry(item: ThreadItem, completed: bool) -> ItemEntry {

@@ -351,6 +351,13 @@ impl AppController {
         let Some(tab_id) = self.tabs.get(index).map(|tab| tab.id) else {
             return;
         };
+        let items = start
+            .turns
+            .iter()
+            .flat_map(|turn| &turn.items)
+            .cloned()
+            .collect::<Vec<_>>();
+        self.approvals_restore_async(index, &items);
         let request = self.with_transcript(index, |transcript, ctx, _| {
             let live_turns = transcript.live_turns();
             transcript.clear_notice(HISTORY_ERROR_KEY);
@@ -417,6 +424,18 @@ impl AppController {
         let Some(index) = self.tab_index_by_id(tab_id) else {
             return;
         };
+        let current_generation = self
+            .thread_tab(index)
+            .map(|thread| thread.transcript.history.generation);
+        if current_generation != Some(result.generation) {
+            return;
+        }
+        let items = result
+            .items
+            .iter()
+            .map(|(_, item)| item.clone())
+            .collect::<Vec<_>>();
+        self.approvals_restore_async(index, &items);
         let applied = self.with_transcript(index, |transcript, ctx, _| {
             if result.generation != transcript.history.generation {
                 return None;

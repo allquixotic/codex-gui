@@ -15,6 +15,7 @@ Broader GUI contract: repository `GUI.md`.
 ## §I INTERFACES
 - I.scroll: wheel, scrollbar, Jump to latest in conversation pane.
 - I.paint: Windows restore, remote desktop exposure, existing redraw events.
+- I.questions: synchronous server-request forms; asynchronous message forms and ordinary send/steer/queue replies.
 - I.speed: provider-catalog speed picker; thread/settings/update and turn/start.
 - I.links: glyph hover, Copy link, Open in browser, Open file.
 
@@ -25,6 +26,8 @@ V3: Link hit ! match shaped glyph and clipping; wrapped web/file links ! retain 
 V4: Copy/tooltip ! preserve file line and resolve relative path; browser action ! encode file URL.
 
 V5: Speed choices ! follow provider catalog and feature requirements; Standard ! send explicit default; model switch ! reset unsupported tier; resume/fork ! preserve reported tier.
+
+V6: Async questions ! show choices + free text; no send before Submit; exact message/index reply identity; turn end ! retain unanswered fields; rejected send ! preserve drafts; history replay ! deduplicate; transcript ! render question once.
 
 ## §T TASKS
 id|status|task|cites
@@ -37,6 +40,8 @@ T5|x|Add catalog-driven inference speed and verify upstream migration|V5,I.speed
 
 T6|.|Extract standalone GUI, pin latest stable, verify Windows CI, commit/push/release|GUI.md §19
 
+T7|.|Fix asynchronous question forms, reply delivery, history replay and Windows interaction verification|V6,I.questions
+
 ## §B BUGS
 id|date|cause|fix
 B1|2026-10-06|32px tail threshold and height-estimate callbacks pull upward scroll back to bottom|V1
@@ -48,3 +53,7 @@ B5|2026-10-06|TouchArea moved fires only during dragging; stopping on hover move
 B6|2026-10-07|Upstream protocol migration adds required fields and replaces skill PathBuf with LegacyAppPathString; clean Git merge still fails compilation|Adapt typed paths and protocol constructors; one-time migration, no new invariant
 
 B7|2026-10-07|Development-main protocol fields and path wrappers differ from stable 0.161.0|Adapt release constructors and optional wire capabilities; one-time migration
+
+B8|2026-10-07|Async question metadata rendered as duplicate passive markdown; no input form or ordinary reply route|V6; retained form and upstream question reply envelope
+
+B9|2026-10-07|Extraction omitted workspace Clippy test settings; copied deny lints reject existing test assertions|Own minimal Clippy config retains test assertions and lock-guard checks; one-time migration

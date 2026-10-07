@@ -230,3 +230,13 @@ to that provider. Common and All settings offer model, reasoning and context cho
 Use development builds for iteration. Make a release build only after completing
 all requested changes and relevant checks, skip macOS release builds for now, and
 clean local build artifacts after verifying the binaries uploaded to GitHub.
+
+## Questions from Codex
+
+When Codex asks a question, an answer card appears above the composer. Click a
+suggested answer or type your own, then **Submit**. The text field is available even
+when there are no suggested options. A preselected suggestion is not sent automatically.
+For questions asked while Codex keeps working, typing overrides the selected option;
+answers follow your normal send/steer/queue preference. **Dismiss** closes those
+questions locally. Unanswered fields stay available after a partial submission and
+after Codex finishes the requesting turn.

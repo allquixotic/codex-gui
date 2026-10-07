@@ -1211,3 +1211,24 @@ of this feasibility investigation.
   a release only from a successful workflow for the exact tagged commit.
 - Repository maintenance rules live in AGENTS.md. Contributions remain informal;
   no upstream CLA or project attachment is implied.
+
+## 20. Asynchronous question interaction (2026-10-07)
+
+Synchronous `item/tool/requestUserInput` requests keep their existing answer forms
+and JSON-RPC responses. Asynchronous `request_user_input_async` tools instead emit
+assistant messages with structured questions, then return immediately so the agent
+can keep working. They require a separate delivery path.
+
+Render the message once. Display its questions in the existing card above the
+composer, with the provided suggested answers and an always-available free-text
+field. Preselect the first suggested answer as upstream specifies, but do not send
+anything until Submit. Typed text overrides the selected option. Dismiss is local;
+no nonexistent JSON-RPC request is resolved. Empty text-only submissions leave the
+card and drafts intact. Submitting answered fields leaves other fields available.
+
+Replies use upstream's `send_user_message_question_reply` envelope with an identity
+for each message/index, delivered as ordinary input through existing start/steer/queue
+behavior. Async forms outlive turn completion. On resume or paged history, recognize
+reply identities before restoring questions, suppress duplicates, and show readable
+question/answer text rather than the wire envelope. Current upstream exposes this
+tool only on root conversations, so existing sub-agent synchronous routing is unchanged.

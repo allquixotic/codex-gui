@@ -27,6 +27,7 @@ const NOTICE_ANSWER_CHARS: usize = 60;
 #[derive(Clone, Debug)]
 pub(crate) struct UserInputForm {
     questions: Vec<QuestionState>,
+    asynchronous: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -151,6 +152,7 @@ impl QuestionState {
 impl UserInputForm {
     pub(crate) fn new(params: &ToolRequestUserInputParams) -> Self {
         Self {
+            asynchronous: false,
             questions: params
                 .questions
                 .iter()
@@ -161,6 +163,61 @@ impl UserInputForm {
                 })
                 .collect(),
         }
+    }
+
+    pub(crate) fn from_async(
+        message_id: &str,
+        questions: &[codex_app_server_protocol::AsyncUserInputQuestion],
+    ) -> Self {
+        Self {
+            asynchronous: true,
+            questions: questions
+                .iter()
+                .enumerate()
+                .map(|(index, question)| {
+                    let options = question.options.as_ref().map(|options| {
+                        options
+                            .iter()
+                            .map(
+                                |label| codex_app_server_protocol::ToolRequestUserInputOption {
+                                    label: label.clone(),
+                                    description: String::new(),
+                                },
+                            )
+                            .collect::<Vec<_>>()
+                    });
+                    let selected = options
+                        .as_ref()
+                        .filter(|options| !options.is_empty())
+                        .map(|_| 0);
+                    QuestionState {
+                        question: ToolRequestUserInputQuestion {
+                            id: crate::async_questions::question_id(message_id, index),
+                            header: format!("Question {}", index + 1),
+                            question: question.title.clone(),
+                            is_other: false,
+                            is_secret: false,
+                            options,
+                        },
+                        selected,
+                        text: String::new(),
+                    }
+                })
+                .collect(),
+        }
+    }
+
+    pub(crate) fn is_async(&self) -> bool {
+        self.asynchronous
+    }
+
+    pub(crate) fn dismiss_answered(&mut self, ids: &std::collections::HashSet<String>) {
+        self.questions
+            .retain(|state| !ids.contains(&state.question.id));
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.questions.is_empty()
     }
 
     /// Selects `choice` of `question`; returns whether anything changed.
@@ -182,7 +239,13 @@ impl UserInputForm {
     }
 
     pub(crate) fn field(&self, question: usize) -> Option<FieldView> {
-        self.questions.get(question).map(QuestionState::view)
+        self.questions.get(question).map(|state| {
+            let mut view = state.view();
+            if self.asynchronous && state.has_options() {
+                view.placeholder = "Or type your own answer".into();
+            }
+            view
+        })
     }
 
     /// Answers for every question (TUI encoding).
@@ -204,6 +267,34 @@ impl UserInputForm {
     }
 
     pub(crate) fn submit_answer(&self) -> serde_json::Result<Answer> {
+        if self.asynchronous {
+            let replies: Vec<_> = self
+                .questions
+                .iter()
+                .filter_map(|state| {
+                    let answer = if state.note().is_empty() {
+                        state.selected.and_then(|index| state.choice_label(index))?
+                    } else {
+                        state.note().to_string()
+                    };
+                    Some(crate::async_questions::Reply {
+                        question_item_id: state.question.id.clone(),
+                        question: state.question.question.clone(),
+                        answer,
+                    })
+                })
+                .collect();
+            if replies.is_empty() {
+                return Err(serde::ser::Error::custom(
+                    "Choose an option or type an answer",
+                ));
+            }
+            return Ok(Answer {
+                result: serde_json::Value::String(crate::async_questions::encode(&replies)?),
+                notice: None,
+                open_url: None,
+            });
+        }
         let answered: Vec<(String, String)> = self
             .questions
             .iter()
@@ -241,6 +332,13 @@ impl UserInputForm {
 
     /// Skip: an empty answer map, which the server accepts as "no answers".
     pub(crate) fn skip_answer(&self) -> serde_json::Result<Answer> {
+        if self.asynchronous {
+            return Ok(Answer {
+                result: serde_json::Value::Null,
+                notice: Some((NoticeKind::Info, "You dismissed Codex's questions".into())),
+                open_url: None,
+            });
+        }
         let response = ToolRequestUserInputResponse {
             answers: HashMap::new(),
         };
@@ -261,16 +359,22 @@ impl UserInputForm {
             1 => "Codex has a question".to_string(),
             count => format!("Codex has {count} questions"),
         };
-        CardView::form(
+        let mut card = CardView::form(
             title,
             FormView {
-                fields: self.questions.iter().map(QuestionState::view).collect(),
+                fields: (0..self.questions.len())
+                    .filter_map(|index| self.field(index))
+                    .collect(),
                 submit_label: "Submit".to_string(),
-                secondary_label: "Skip".to_string(),
+                secondary_label: if self.asynchronous { "Dismiss" } else { "Skip" }.to_string(),
                 tertiary_label: String::new(),
                 error: String::new(),
             },
-        )
+        );
+        if self.asynchronous {
+            card.reason = "Codex can keep working. Choose an answer or type your own; Submit sends it to this conversation.".into();
+        }
+        card
     }
 
     pub(crate) fn notification_body(&self) -> String {
@@ -288,6 +392,64 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use serde_json::json;
+
+    #[test]
+    fn v6_async_questions_offer_choices_free_text_and_retain_unanswered_fields() {
+        use codex_app_server_protocol::AsyncUserInputQuestion;
+        let questions = vec![
+            AsyncUserInputQuestion {
+                title: "Which ticket?".into(),
+                options: Some(vec!["SMP-42".into(), "No ticket yet".into()]),
+            },
+            AsyncUserInputQuestion {
+                title: "Which ticket?".into(),
+                options: None,
+            },
+        ];
+        let mut form = UserInputForm::from_async("call", &questions);
+        let card = form.card();
+        let super::super::request::CardBody::Form(view) = card.body else {
+            panic!("question form")
+        };
+        assert_eq!(view.secondary_label, "Dismiss");
+        assert_eq!(view.fields.len(), 2);
+        assert_eq!(view.fields[0].choices.len(), 2);
+        assert!(view.fields[0].choices[0].checked);
+        assert!(view.fields.iter().all(|field| field.show_text));
+        assert_eq!(view.fields[1].kind, FieldKind::Text);
+        // Preselection is just a draft. Explicit submission sends the choice.
+        let first = form.submit_answer().expect("answer");
+        let replies = crate::async_questions::parse(first.result.as_str().expect("envelope"))
+            .expect("replies");
+        assert_eq!(replies.len(), 1);
+        assert_eq!(replies[0].answer, "SMP-42");
+        // Typing overrides the selected option rather than sending both.
+        form.set_text(0, "SMP-99".into());
+        let answer = form.submit_answer().expect("typed answer");
+        let replies = crate::async_questions::parse(answer.result.as_str().expect("envelope"))
+            .expect("replies");
+        assert_eq!(replies[0].answer, "SMP-99");
+        form.dismiss_answered(
+            &replies
+                .iter()
+                .map(|reply| reply.question_item_id.clone())
+                .collect(),
+        );
+        assert!(!form.is_empty());
+        assert_eq!(form.card().title, "Codex has a question");
+        // Empty free-text submissions preserve the pending card and draft.
+        assert!(form.submit_answer().is_err());
+        form.set_text(0, "Rally-101".into());
+        let answer = form.submit_answer().expect("second answer");
+        let replies = crate::async_questions::parse(answer.result.as_str().expect("envelope"))
+            .expect("replies");
+        assert_eq!(
+            replies[0].question_item_id,
+            crate::async_questions::question_id("call", 1)
+        );
+        assert_eq!(replies[0].answer, "Rally-101");
+        assert!(form.skip_answer().expect("dismiss").result.is_null());
+    }
 
     fn form() -> UserInputForm {
         let params: ToolRequestUserInputParams = match serde_json::from_value(json!({

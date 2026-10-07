@@ -23,6 +23,7 @@
 //! clicks for [`INPUT_GUARD`] after it appears or changes, so typing meant for
 //! something else cannot answer it.
 
+mod async_input;
 mod delivery;
 mod elicitation;
 mod format;
@@ -356,6 +357,10 @@ struct CardModels {
 #[derive(Default)]
 pub(crate) struct ApprovalsController {
     file_changes: FileChangeCache,
+    /// Message identities already shown during this session; replay-safe.
+    async_seen: HashSet<(String, RequestId)>,
+    /// Answer identities learned from newer history pages or live replies.
+    async_answered: HashMap<String, HashSet<String>>,
     /// File-change items being fetched because their changes were not cached.
     fetching: HashSet<(String, String)>,
     /// Parents of threads that have no tab (filled by `thread/read`).
@@ -798,6 +803,13 @@ impl AppController {
     /// Answers a request nobody can see with its cancel choice (or the
     /// equivalent empty answer) so the agent is never left waiting.
     fn approvals_auto_cancel(&mut self, request: PendingRequest) {
+        if request.is_async_question() {
+            // No outstanding JSON-RPC request exists for async messages.
+            self.approvals
+                .async_seen
+                .remove(&(request.thread_id, request.request_id));
+            return;
+        }
         let answer = match &request.kind {
             RequestKind::Delivery(delivery) => {
                 // Not a server request: the sender's tool call is answered
@@ -895,6 +907,7 @@ impl AppController {
                 );
             }
             ServerNotification::ItemCompleted(completed) => {
+                self.approvals_async_item(&completed.thread_id, &completed.item);
                 if let ThreadItem::FileChange { id, .. } = &completed.item {
                     self.approvals.file_changes.remove(&completed.thread_id, id);
                 }
@@ -914,6 +927,9 @@ impl AppController {
                 });
             }
             ServerNotification::ThreadClosed(closed) => {
+                self.approvals
+                    .async_seen
+                    .retain(|(thread_id, _)| thread_id != &closed.thread_id);
                 self.approvals_dismiss(|request| request.thread_id == closed.thread_id);
             }
             _ => {}
@@ -961,7 +977,9 @@ impl AppController {
     pub(crate) fn approvals_reset(&mut self) {
         for tab in &mut self.tabs {
             if let Some(thread) = tab.thread_mut() {
-                thread.approvals = PendingApprovals::default();
+                thread
+                    .approvals
+                    .drop_where(|request| !request.is_async_question());
             }
         }
         self.approvals.awaiting_route.clear();
@@ -1369,6 +1387,9 @@ impl AppController {
         request_id: &RequestId,
         answer: serde_json::Result<Answer>,
     ) {
+        if self.approvals_finish_async(index, request_id, &answer) {
+            return;
+        }
         let Some(request) = self
             .thread_tab_mut(index)
             .and_then(|thread| thread.approvals.take(request_id))
@@ -1616,6 +1637,10 @@ impl AppController {
 /// Keyboard hint under a choices card (forms show their own text).
 fn approvals_hint(request: &PendingRequest) -> String {
     match &request.kind {
+        RequestKind::UserInput(form) if form.is_async() => {
+            "Your typed answer overrides the selected option. Nothing is sent until Submit."
+                .to_string()
+        }
         RequestKind::UserInput(_) => {
             "Unanswered questions are sent without an answer. Skip sends no answers.".to_string()
         }

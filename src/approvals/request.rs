@@ -415,6 +415,10 @@ pub(crate) struct CardContext<'a> {
 }
 
 impl PendingRequest {
+    pub(crate) fn is_async_question(&self) -> bool {
+        matches!(&self.kind, RequestKind::UserInput(form) if form.is_async())
+    }
+
     /// Card shown for this request.
     pub(crate) fn card(&self, context: &CardContext<'_>) -> CardView {
         match &self.kind {

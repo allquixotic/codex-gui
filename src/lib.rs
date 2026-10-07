@@ -9,6 +9,7 @@
 
 mod app;
 mod approvals;
+mod async_questions;
 mod automation;
 mod backend;
 mod composer;
