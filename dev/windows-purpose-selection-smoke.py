@@ -15,15 +15,30 @@ assert sys.platform == 'win32', 'Never run GUI tests on Sean\'s Mac'
 import ctypes
 from ctypes import wintypes
 
-# Native menus run a modal Win32 loop. Drive their real keyboard input from
-# outside that loop, and verify ownership before injecting any key events.
+# Native menus run a modal Win32 loop. Invoke their real accessibility default
+# action from outside that loop; never inject global desktop keystrokes.
 def drive_copy_menus(process, evidence, errors):
     user32 = ctypes.windll.user32
-    user32.GetForegroundWindow.restype = wintypes.HWND
+    class GUIThreadInfo(ctypes.Structure):
+        _fields_ = [('size', wintypes.DWORD), ('flags', wintypes.DWORD),
+                    ('active', wintypes.HWND), ('focus', wintypes.HWND),
+                    ('capture', wintypes.HWND), ('menu_owner', wintypes.HWND),
+                    ('move_size', wintypes.HWND), ('caret', wintypes.HWND),
+                    ('caret_rect', wintypes.RECT)]
+    user32.GetGUIThreadInfo.argtypes = [wintypes.DWORD, ctypes.POINTER(GUIThreadInfo)]
     user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
     user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
     user32.IsWindowVisible.argtypes = [wintypes.HWND]
     user32.OpenClipboard.argtypes = [wintypes.HWND]
+    class VariantValue(ctypes.Union):
+        _fields_ = [('integer', wintypes.LONG), ('pointer', ctypes.c_void_p), ('record', ctypes.c_byte * 16)]
+    class Variant(ctypes.Structure):
+        _fields_ = [('kind', wintypes.WORD), ('reserved1', wintypes.WORD), ('reserved2', wintypes.WORD), ('reserved3', wintypes.WORD), ('value', VariantValue)]
+    ole32 = ctypes.windll.ole32
+    oleacc = ctypes.windll.oleacc
+    oleacc.AccessibleObjectFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
+    oleacc.AccessibleObjectFromWindow.restype = ctypes.HRESULT
+    initialized = ole32.CoInitializeEx(None, 2) >= 0
     user32.SendMessageW.restype = ctypes.c_void_p
     user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
     user32.GetMenuItemCount.argtypes = [wintypes.HMENU]
@@ -56,9 +71,13 @@ def drive_copy_menus(process, evidence, errors):
                     items.append(label.value.replace('&', ''))
                 if not items or items[0] != 'Copy':
                     continue
-                foreground_pid = wintypes.DWORD()
-                user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), ctypes.byref(foreground_pid))
-                assert foreground_pid.value == process.pid, 'Copy menu lost GUI foreground ownership'
+                info = GUIThreadInfo(size=ctypes.sizeof(GUIThreadInfo))
+                menu_thread = user32.GetWindowThreadProcessId(hwnd, None)
+                assert user32.GetGUIThreadInfo(menu_thread, ctypes.byref(info))
+                owner = info.menu_owner
+                owner_pid = wintypes.DWORD()
+                user32.GetWindowThreadProcessId(owner, ctypes.byref(owner_pid))
+                assert owner_pid.value == process.pid, 'Copy menu lost GUI ownership'
                 assert user32.GetMenuState(menu, 0, 0x400) & 3 == 0, 'Copy is disabled for selected text'
                 # Empty the clipboard so this cannot pass with the Ctrl+C result.
                 assert user32.OpenClipboard(None)
@@ -68,15 +87,26 @@ def drive_copy_menus(process, evidence, errors):
                     user32.CloseClipboard()
                 seen.add(hwnd)
                 evidence.append(items)
-                for key in (0x24, 0x0D):  # Home, Enter: activate the first enabled item.
-                    user32.keybd_event(key, 0, 0, 0)
-                    user32.keybd_event(key, 0, 2, 0)
-                    time.sleep(.05)
+                interface = ctypes.c_void_p()
+                import uuid
+                iid = (ctypes.c_byte * 16).from_buffer_copy(uuid.UUID('618736e0-3c3d-11cf-810c-00aa00389b71').bytes_le)
+                assert oleacc.AccessibleObjectFromWindow(hwnd, 0xFFFFFFFC, ctypes.byref(iid), ctypes.byref(interface)) >= 0
+                try:
+                    table = ctypes.cast(interface, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+                    invoke = ctypes.WINFUNCTYPE(ctypes.HRESULT, ctypes.c_void_p, Variant)(table[25])  # IAccessible.accDoDefaultAction
+                    child = Variant(kind=3, value=VariantValue(integer=1))  # VT_I4: first menu item.
+                    assert invoke(interface, child) >= 0
+                finally:
+                    release = ctypes.WINFUNCTYPE(wintypes.ULONG, ctypes.c_void_p)(table[2])
+                    release(interface)
             if not windows:
                 seen.clear()  # Win32 may reuse a popup HWND for the next menu.
             time.sleep(.05)
     except Exception as error:
         errors.append(str(error))
+    finally:
+        if initialized:
+            ole32.CoUninitialize()
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('binary', type=Path)

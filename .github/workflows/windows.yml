@@ -78,7 +78,10 @@ jobs:
           path: dist/smoke/
           if-no-files-found: ignore
       - name: Windows purpose, resize, persistence and conversation-selection smoke test
-        run: python dev/windows-purpose-selection-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
+        run: |
+          python dev/windows-native-menu-driver-check.py
+          if ($LASTEXITCODE -ne 0) { throw 'Native menu automation probe failed' }
+          python dev/windows-purpose-selection-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
       - name: Upload purpose and selection evidence
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
