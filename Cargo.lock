@@ -3165,7 +3165,7 @@ dependencies = [
 
 [[package]]
 name = "codex-gui"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "arboard",
@@ -3228,6 +3228,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "unicode-segmentation",
  "url",
  "uuid",
  "webbrowser",

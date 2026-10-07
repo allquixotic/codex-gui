@@ -74,7 +74,7 @@ impl Drop for TemporarySession {
 
 /// Keep the default model's provider namespace and geographic profile.
 /// Catalog entries from a different region are deliberately excluded.
-fn search_model(default: Option<&str>, models: &[Model]) -> Option<String> {
+pub(crate) fn search_model(default: Option<&str>, models: &[Model]) -> Option<String> {
     let default = default.or_else(|| {
         models
             .iter()

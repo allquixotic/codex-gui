@@ -314,6 +314,7 @@ pub(crate) struct AppController {
     pub(crate) settings: SettingsController,
     pub(crate) bedrock: BedrockController,
     pub(crate) sidebar: SidebarController,
+    pub(crate) transcript_selection: crate::transcript::selection::SelectionController,
     pub(crate) newtab: NewTabController,
     pub(crate) xtab: XtabController,
     pub(crate) composer_shared: crate::composer::ComposerShared,
@@ -365,6 +366,7 @@ impl AppController {
             state.set_tabs(ModelRc::from(tab_model.clone()));
             state.set_warnings(ModelRc::from(warnings_model.clone()));
             state.set_sidebar_visible(prefs.sidebar_visible);
+            state.set_sidebar_width(prefs.sidebar_width);
             state.set_info_visible(prefs.info_pane_visible);
             state.set_server_status("starting".into());
         }
@@ -380,6 +382,7 @@ impl AppController {
             settings: SettingsController::default(),
             bedrock: BedrockController::default(),
             sidebar: SidebarController::default(),
+            transcript_selection: crate::transcript::selection::SelectionController::default(),
             newtab: NewTabController::default(),
             xtab: XtabController::default(),
             composer_shared: crate::composer::ComposerShared::default(),

@@ -500,6 +500,9 @@ pub trait RenderString: HasFont {
 /// Trait for an item that represents an Text towards the renderer
 #[allow(missing_docs)]
 pub trait RenderText: RenderString {
+    fn selection_range(self: Pin<&Self>) -> core::ops::Range<usize> { 0..0 }
+    fn selection_colors(self: Pin<&Self>) -> (Color, Color) { Default::default() }
+    fn selection_caret(self: Pin<&Self>) -> Option<usize> { None }
     fn target_size(self: Pin<&Self>) -> LogicalSize;
     fn color(self: Pin<&Self>) -> Brush;
     fn alignment(self: Pin<&Self>) -> (TextHorizontalAlignment, TextVerticalAlignment);

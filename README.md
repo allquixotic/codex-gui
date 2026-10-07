@@ -3,6 +3,8 @@
 An independent native desktop front end for Codex, built with [Slint](https://slint.dev).
 Tabbed conversations, approvals and questions, file/diff viewers, cross-tab messaging,
 provider settings, and inference speed selection run on an embedded Codex app-server.
+Threads have cached purpose labels and tooltips in a resizable sidebar. Conversation
+text supports drag selection, Shift/arrows, Ctrl+C and right-click Copy.
 There is one GUI process and no listening socket by default. Optional daemon and remote
 connections remain available.
 
@@ -23,7 +25,7 @@ explains everyday use; [AGENTS.md](AGENTS.md) describes maintenance.
 
 ## Stable upstream dependency
 
-Codex GUI 0.2.0 embeds **Codex 0.161.0**, stable tag `rust-v0.161.0`, pinned to
+Codex GUI 0.3.0 embeds **Codex 0.161.0**, stable tag `rust-v0.161.0`, pinned to
 `979011409de0a60b52f179721948e65531d26144`. `upstream.json`, the Cargo Git dependencies
 and `Cargo.lock` record the exact backend. One minimal Bedrock tier backport
 across the provider and request builder restores Bedrock Astra Ultrafast and preserves custom catalogs’ tiers; see
@@ -95,7 +97,7 @@ main thread                         Tokio runtime (worker threads)
 | `approvals/` | approvals, user-input questions, MCP elicitations |
 | `settings/` | settings tab: common, schema-driven "all settings", raw TOML, import, account, MCP, skills, plugins, hooks, features, appearance, keyboard, connection, Windows sandbox, diagnostics, feedback; `settings/bedrock` is the providers page (Amazon Bedrock, local models) |
 | `files/` | file viewer and diff viewer tabs, find, open externally |
-| `sidebar.rs`, `info.rs` + `info/`, `newtab.rs` | thread list, info pane (`info/terminals`: background terminals), new-tab page (folder trust check) |
+| `sidebar.rs` + `sidebar/`, `info.rs` + `info/`, `newtab.rs` | cached thread purposes, semantic search, thread list, info pane (`info/terminals`: background terminals), new-tab page (folder trust check) |
 | `xtab/` | cross-tab messaging tools, mailbox, wait-for-reply |
 | `notify.rs` | desktop notifications while the window is in the background |
 | `shortcuts.rs` | global keymap (user-overridable) |

@@ -181,6 +181,47 @@ mod tests {
             "clipped glyphs must not hit"
         );
         assert_eq!(link_at(scene.window(), 250.0, 20.0), None);
+        // V9: selecting rich text must paint the actual wrapped glyph range,
+        // with cursor hit-testing using the very same layout as links.
+        let inner = WindowInner::from_pub(scene.window());
+        let root = ItemRc::new_root(inner.try_component().unwrap());
+        root.visit_descendants::<()>(|item| {
+            let Some(text) = item.downcast::<StyledTextItem>() else {
+                return ControlFlow::Continue(());
+            };
+            let text = text.as_pin_ref();
+            text.selection_anchor.set(0);
+            text.selection_cursor.set(30);
+            text.selection_background
+                .set(slint::Color::from_rgb_u8(250, 0, 220));
+            text.selection_foreground
+                .set(slint::Color::from_rgb_u8(255, 255, 255));
+            let (index, caret) = i_slint_core::textlayout::sharedparley::rich_text_cursor(
+                ScaleFactor::new(scene.window().scale_factor()),
+                text,
+                item,
+                LogicalPoint::default(),
+                Some(10),
+                scene.window(),
+            );
+            assert_eq!(index, 10);
+            assert!(caret.height() > 0.0);
+            ControlFlow::Continue(())
+        });
+        window.request_redraw();
+        window.draw_if_needed(|renderer| {
+            renderer.render(&mut pixels, 320);
+        });
+        assert_ne!(pixels, expected, "selection must invalidate rich text");
+        assert!(
+            pixels.iter().any(|p| p.r == 250 && p.g == 0 && p.b == 220),
+            "selection must draw its background"
+        );
+        assert_eq!(
+            link_at(scene.window(), 20.0, 95.0),
+            None,
+            "selection preserves clipping"
+        );
         scene.hide()?;
         drop(scene);
 

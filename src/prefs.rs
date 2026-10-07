@@ -59,6 +59,7 @@ pub(crate) struct Prefs {
     /// Register cross-tab messaging tools on new threads.
     pub(crate) cross_tab_tools: bool,
     pub(crate) sidebar_visible: bool,
+    pub(crate) sidebar_width: f32,
     pub(crate) info_pane_visible: bool,
     pub(crate) window_width: f32,
     pub(crate) window_height: f32,
@@ -88,6 +89,7 @@ impl Default for Prefs {
             desktop_notifications: true,
             cross_tab_tools: true,
             sidebar_visible: true,
+            sidebar_width: 261.0,
             info_pane_visible: true,
             window_width: 1280.0,
             window_height: 820.0,
@@ -211,6 +213,9 @@ impl Prefs {
         }
         if !(300.0..=10_000.0).contains(&self.window_height) {
             self.window_height = Self::default().window_height;
+        }
+        if !(180.0..=600.0).contains(&self.sidebar_width) {
+            self.sidebar_width = Self::default().sidebar_width;
         }
         self.recent_folders.truncate(MAX_RECENT_FOLDERS);
         self

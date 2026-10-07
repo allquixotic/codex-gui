@@ -1206,7 +1206,8 @@ of this feasibility investigation.
   or upstream repository clone is needed at runtime.
 - Mirror stable upstream's required Cargo transport patches in the consumer
   manifest. Carry the existing one-line Slint wrapped-link hit fix with its own
-  licenses until an upstream Slint release fixes it; no other vendor changes.
+  licenses until an upstream Slint release fixes it. Section 23 adds the narrow
+  rich-text selection bridge; keep both changes documented in the vendor inventory.
 - Stable APIs may differ from development main: use release types, preserve
   compatibility with newer remote servers via optional wire capabilities, and
   run typed API checks on each update. This removes source merges, not API work.
@@ -1236,3 +1237,41 @@ behavior. Async forms outlive turn completion. On resume or paged history, recog
 reply identities before restoring questions, suppress duplicates, and show readable
 question/answer text rather than the wire envelope. Current upstream exposes this
 tool only on root conversations, so existing sub-agent synchronous routing is unchanged.
+
+## 22. Conversation purpose summaries (next release)
+
+Maintain a very short sidebar title and a plain-text, wrapping tooltip of one
+or two sentences using the existing fast/cheap model selector (gpt-6-luna by
+default, respecting provider/profile namespaces); fall back to the normal
+conversation model if unavailable or failing. Generate both in one ephemeral,
+tool-free background turn. Never list or persist the inference conversation.
+Only user-written requests from processed conversation turns belong in its
+input; omit assistant/tool output. Recompute after newly consumed requests
+finish processing, never at queue submission. Cache both strings in a GUI-only
+file under the resolved CODEX_HOME so reopening consumes no extra inference.
+
+A manual rename permanently protects that thread’s title from generated
+changes; its tooltip remains automatic. Make the sidebar resizable, persist its
+width, and debounce adjustments for ten seconds. After it settles, shorten the
+cached tooltip summaries for currently visible threads in a background request
+without re-reading conversation context. Generated labels must fit the available
+row width without ellipses. Discard stale results after newer requests, resizes
+or manual renames. This feature ships after the currently building 0.2.0 release.
+
+
+## 23. Conversation text selection (0.3.0)
+
+User and assistant conversation text supports drag selection and keyboard
+selection with Shift/arrows, Home/End and word movement. Ctrl+C (Cmd+C on
+macOS) and right-click Copy copy the selected plain text. Native read-only
+text inputs retain their selection behavior. Formatted Markdown keeps its
+layout, links and existing message actions. A click on a link still opens it;
+a selection drag does not.
+
+Rich text uses the pinned Slint layout's shaped glyph hit-testing, cursor
+rectangles and selection geometry, with a narrow internal rendering bridge
+documented in third_party/slint/README.md. Selection state covers materialized
+visible text and its endpoints, never the full conversation history, and is
+cleared when switching transcripts. Windows verification covers wrapped rich
+selection rendering, real drag/Shift-arrow input and clipboard contents. This
+ships together with section 22 after 0.2.0.

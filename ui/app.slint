@@ -79,6 +79,7 @@ export global AppState {
     in property <string> window-title: "Codex";
     // Docked panes (saved preferences).
     in-out property <bool> sidebar-visible: true;
+    in-out property <float> sidebar-width: 261;
     in-out property <bool> info-visible: true;
     // Whether each pane fits docked in the current window (set by
     // MainWindow); when it does not, its toggle opens a drawer instead.
@@ -862,7 +863,11 @@ export component MainWindow inherits Window {
 
     // Widths of the docked panes (including their dividers) and the
     // narrowest content area they leave.
-    property <length> sidebar-pane-width: 261px;
+    property <length> sidebar-pane-width: AppState.sidebar-width * 1px;
+    changed sidebar-pane-width => {
+        root.update-pane-fit();
+        SidebarState.width-changed(AppState.sidebar-width);
+    }
     property <length> info-pane-width: 281px;
     property <length> min-content-width: 540px;
 
@@ -1042,10 +1047,25 @@ export component MainWindow inherits Window {
                 vertical-stretch: 1;
 
                 if AppState.sidebar-visible && AppState.sidebar-fits: Sidebar {
-                    width: root.sidebar-pane-width - 1px;
+                    width: root.sidebar-pane-width - 5px;
                 }
-                if AppState.sidebar-visible && AppState.sidebar-fits: Divider {
-                    vertical: true;
+                if AppState.sidebar-visible && AppState.sidebar-fits: Rectangle {
+                    width: 5px;
+                    background: resize-touch.has-hover || resize-touch.pressed ? Theme.accent : Theme.border;
+                    property <length> drag-start-x;
+                    property <float> drag-start-width;
+                    resize-touch := TouchArea {
+                        mouse-cursor: ew-resize;
+                        pointer-event(event) => {
+                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                                parent.drag-start-x = self.absolute-position.x + self.mouse-x;
+                                parent.drag-start-width = AppState.sidebar-width;
+                            }
+                        }
+                        moved => {
+                            AppState.sidebar-width = clamp(parent.drag-start-width + (self.absolute-position.x + self.mouse-x - parent.drag-start-x) / 1px, 180, min(600, root.width / 1px - 500));
+                        }
+                    }
                 }
 
                 Rectangle {

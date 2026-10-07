@@ -7,6 +7,7 @@
 //! status dot; [`AppController::sidebar_on_tabs_changed`] updates those marks
 //! in place without refetching.
 
+mod purpose;
 mod search;
 
 use std::cell::RefCell;
@@ -316,6 +317,7 @@ fn status_for_phase(phase: ThreadPhase) -> SidebarThreadStatus {
 /// Sidebar state shared by all tabs.
 #[derive(Default)]
 pub(crate) struct SidebarController {
+    purpose: purpose::PurposeController,
     /// Loaded threads in server order (all pages).
     threads: Vec<ThreadSummary>,
     history_hits: Vec<ThreadSummary>,
@@ -369,8 +371,18 @@ impl SidebarController {
 
 impl AppController {
     pub(crate) fn sidebar_bind(&mut self) {
+        self.sidebar.purpose = purpose::PurposeController::load(self.codex_home.as_deref());
         let state = self.window.global::<SidebarState>();
         state.set_rows(ModelRc::from(self.sidebar.rows.clone()));
+        state.on_width_changed(|width| {
+            crate::ui_thread::with_app(move |app| app.purpose_width_changed(width))
+        });
+        state.on_budget_changed(|| crate::ui_thread::with_app(AppController::sidebar_render));
+        state.on_viewport_changed(|| {
+            slint::Timer::single_shot(Duration::ZERO, || {
+                crate::ui_thread::with_app(AppController::purpose_schedule_missing)
+            });
+        });
         state.on_search_edited(|text| {
             let text = text.to_string();
             crate::ui_thread::with_app(move |app| app.sidebar_search_edited(text));
@@ -426,6 +438,7 @@ impl AppController {
 
     pub(crate) fn sidebar_on_notification(&mut self, notification: &ServerNotification) {
         self.sidebar_search_notification(notification);
+        self.purpose_on_notification(notification);
         match notification {
             ServerNotification::ThreadStarted(started) => {
                 let thread = &started.thread;
@@ -463,7 +476,10 @@ impl AppController {
                     .map(str::trim)
                     .filter(|name| !name.is_empty())
                 {
-                    Some(name) => self.sidebar_set_title(&updated.thread_id, name),
+                    Some(name) => {
+                        self.purpose_manual_name(&updated.thread_id, name);
+                        self.sidebar_set_title(&updated.thread_id, name);
+                    }
                     // The fallback title needs the preview: refetch.
                     None => self.sidebar_refresh(),
                 }
@@ -601,6 +617,7 @@ impl AppController {
         }
         match result {
             Ok(response) => {
+                self.purpose_observe_names(&response.data);
                 let page: Vec<ThreadSummary> = response
                     .data
                     .iter()
@@ -678,13 +695,22 @@ impl AppController {
                 if let RowSpec::Thread { id, .. } = &spec {
                     row_index.insert(id.clone(), index);
                 }
-                to_slint_row(spec, now, &marks)
+                let mut row = to_slint_row(spec, now, &marks);
+                if row.kind == SidebarRowKind::Thread {
+                    let (title, tooltip, generated) =
+                        self.purpose_display(row.id.as_str(), row.title.as_str());
+                    row.title = title.into();
+                    row.tooltip = tooltip.into();
+                    row.generated_title = generated;
+                }
+                row
             })
             .collect();
         sync_model(&self.sidebar.rows, rows);
         self.sidebar.row_index = row_index;
         *self.sidebar.marks.borrow_mut() = marks;
         self.sidebar_render_state();
+        self.purpose_schedule_missing();
     }
 
     fn sidebar_render_state(&self) {
@@ -816,6 +842,7 @@ impl AppController {
                     |request_id| ClientRequest::ThreadSetName { request_id, params },
                     move |app, result: Result<ThreadSetNameResponse, BackendError>| match result {
                         Ok(_) => {
+                            app.purpose_manual_name(&thread_id, &name);
                             app.sidebar_set_title(&thread_id, &name);
                             if let Some(index) = app.tab_index_for_thread(&thread_id)
                                 && let Some(tab) = app.thread_tab_mut(index)
@@ -960,6 +987,8 @@ fn to_slint_row(spec: RowSpec, now: i64, marks: &HashMap<String, ThreadMark>) ->
                 id: folder.as_str().into(),
                 title: crate::app::folder_label(&path).into(),
                 detail: crate::newtab::display_path(&path).into(),
+                tooltip: "".into(),
+                generated_title: false,
                 folder: folder.into(),
                 count: i32::try_from(count).unwrap_or(i32::MAX),
                 collapsed,
@@ -979,6 +1008,8 @@ fn to_slint_row(spec: RowSpec, now: i64, marks: &HashMap<String, ThreadMark>) ->
                 id: id.into(),
                 title: title.into(),
                 detail: relative_time(now, updated_at).into(),
+                tooltip: "".into(),
+                generated_title: false,
                 folder: cwd.to_string_lossy().into_owned().into(),
                 count: 0,
                 collapsed: false,

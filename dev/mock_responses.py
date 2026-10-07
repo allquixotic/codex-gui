@@ -298,6 +298,8 @@ def plan_events(body, text):
         )
     elif lowered.startswith("slow"):
         yield from message_events("Streaming slowly so you can interrupt or steer me. " * 6, chunk=6, delay=0.12)
+    elif lowered.startswith("purpose-"):
+        yield from message_events("ASSISTANT_SECRET must never enter purpose inference.\n\nSelection sample **bold** text and [a link](https://example.com).")
     else:
         yield from message_events(f"You said: {text}\n\nThis reply comes from the **mock** server.")
     yield completed(rid)
@@ -337,7 +339,17 @@ def structured_events(body):
     rid = next_id("resp")
     yield created(rid)
     schema = ((body.get("text") or {}).get("format") or {}).get("schema") or {}
-    if "matches" in (schema.get("properties") or {}):
+    properties = schema.get("properties") or {}
+    if "short" in properties and "tooltip" in properties:
+        prompt = last_user_text(body) or ""
+        updated = "USER_TWO" in prompt
+        result = {"short": "Auth tests" if updated else "Fix auth", "tooltip": "Fix authentication and add regression tests." if updated else "Repair authentication."}
+        yield from message_events(json.dumps(result))
+    elif "titles" in properties:
+        prompt = last_user_text(body) or ""
+        summaries = json.loads(prompt.split("Cached summaries (JSON): ", 1)[1])
+        yield from message_events(json.dumps({"titles": [{"id": row["id"], "short": "Auth"} for row in summaries]}))
+    elif "matches" in properties:
         text = last_user_text(body) or ""
         query = json.loads(text.split("Query: ", 1)[1].splitlines()[0]).lower()
         matches = []
@@ -423,6 +435,7 @@ def followup_events(body):
 
 class Handler(BaseHTTPRequestHandler):
     request_log = None
+    fail_model = None
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):  # noqa: N802
@@ -455,7 +468,15 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.request_log:
             with open(self.request_log, "a", encoding="utf-8") as log:
-                log.write(json.dumps(body) + "\n")
+                log.write(json.dumps(dict(body, _mock_received_at=time.time())) + "\n")
+        if self.fail_model and body.get("model") == self.fail_model:
+            error = json.dumps({"error": {"message": "This model is unavailable in the mock", "type": "invalid_request_error", "code": "model_not_found"}}).encode()
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(error)))
+            self.end_headers()
+            self.wfile.write(error)
+            return
         text = last_user_text(body)
         if wants_json_schema(body):
             events = structured_events(body)
@@ -509,10 +530,12 @@ def main():
     parser.add_argument("--port", type=int, default=18080)
     parser.add_argument("--write-config", metavar="CODEX_HOME")
     parser.add_argument("--request-log", help="Record mock requests as JSONL for end-to-end assertions")
+    parser.add_argument("--fail-model", help="Reject this mock model to exercise normal-model fallback")
     args = parser.parse_args()
     if args.write_config:
         write_config(args.write_config, args.port)
     Handler.request_log = args.request_log
+    Handler.fail_model = args.fail_model
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     sys.stderr.write(f"mock responses server on http://127.0.0.1:{args.port}/v1\n")
     server.serve_forever()

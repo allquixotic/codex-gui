@@ -213,14 +213,23 @@ pub fn draw_text(
             };
 
             if render {
+                let range = text.selection_range();
+                let spans = if range.is_empty() { SelectionSpans::default() }
+                    else { layout.selection_geometry(range, &draw::visible_band(item_renderer)) };
+                let (background, foreground) = text.selection_colors();
+                for rect in spans.backgrounds() { item_renderer.fill_rectangle_with_color(rect, background); }
+                let selection = (!spans.is_empty()).then(|| item_renderer.platform_brush_for_color(&foreground)
+                    .map(|foreground| SelectionRendering { spans: &spans, foreground })).flatten();
+                if spans.is_empty() && let Some(offset) = text.selection_caret() {
+                    let rect = layout.cursor_rect_for_byte_offset(offset, crate::items::TextCursorAffinity::NextCharacter, PhysicalLength::new(1.0));
+                    item_renderer.fill_rectangle_with_color(rect, foreground);
+                }
                 layout.draw(
                     item_renderer,
                     platform_fill_brush,
                     platform_stroke_brush,
                     text_color,
-                    // `Text` has no selection today; the machinery is shared so wiring one up
-                    // later is a matter of passing spans here.
-                    None,
+                    selection.as_ref(),
                 );
             }
 
@@ -229,6 +238,29 @@ pub fn draw_text(
             }
         },
     );
+}
+
+/// Byte cursor and cursor rectangle for rich text, using its rendered layout.
+#[cfg(feature = "std")]
+pub fn rich_text_cursor(
+    scale: ScaleFactor,
+    text: Pin<&dyn crate::item_rendering::RenderText>,
+    item: &crate::item_tree::ItemRc,
+    point: LogicalPoint,
+    offset: Option<usize>,
+    window: &crate::api::Window,
+) -> (usize, LogicalRect) {
+    let builder = shaping_builder(text, Some(item), text.wrap(), scale);
+    let (horizontal_align, vertical_align) = text.alignment();
+    let size = text.target_size();
+    with_text_layout(None, Some(item), text, &builder, LayoutOptions {
+        horizontal_align, vertical_align, max_height: Some(size.height_length()),
+        max_width: Some(size.width_length()), max_lines: text.line_limit(), text_overflow: text.overflow(),
+    }, window, |layout| {
+        let cursor = offset.unwrap_or_else(|| layout.byte_offset_from_point(point * scale).0);
+        let rect = layout.cursor_rect_for_byte_offset(cursor, crate::items::TextCursorAffinity::NextCharacter, PhysicalLength::new(1.0));
+        (cursor, rect / scale)
+    }).unwrap_or_default()
 }
 
 #[cfg(feature = "std")]

@@ -17,6 +17,8 @@ export struct SidebarRow {
     // Thread id (thread rows) or folder path (folder rows).
     id: string,
     title: string,
+    tooltip: string,
+    generated-title: bool,
     // Folder rows: full path. Thread rows: relative update time.
     detail: string,
     // Folder of the thread, or the folder itself.
@@ -42,6 +44,13 @@ export global SidebarState {
     // Set by Rust to move keyboard focus into the search box.
     in-out property <bool> focus-search-requested;
 
+    in-out property <float> title-available-width: 150;
+    in-out property <float> title-character-width: 14;
+    in-out property <float> viewport-offset;
+    in-out property <float> viewport-height;
+    callback width-changed(float);
+    callback budget-changed();
+    callback viewport-changed();
     callback search-edited(text: string);
     callback toggle-archived();
     callback refresh();
@@ -212,12 +221,13 @@ component ThreadRowView inherits Rectangle {
             Text {
                 text: item.title;
                 color: item.selected ? Theme.text : Theme.text-muted;
-                overflow: elide;
+                overflow: item.generated-title ? clip : elide;
                 vertical-alignment: center;
                 horizontal-stretch: 1;
             }
             Text {
                 text: item.detail;
+                width: 52px;
                 color: Theme.text-faint;
                 font-size: Theme.font-size-small;
                 vertical-alignment: center;
@@ -225,8 +235,19 @@ component ThreadRowView inherits Rectangle {
         }
     }
 
-    Tooltip {
-        text: @markdown("\{item.title}");
+    if item.tooltip != "": Tooltip {
+        Rectangle {
+            width: 360px;
+            height: tip.preferred-height + 16px;
+            background: Theme.surface;
+            tip := Text {
+                x: 8px; y: 8px; width: 344px;
+                text: item.tooltip;
+                color: Theme.text;
+                font-size: Theme.font-size;
+                wrap: word-wrap;
+            }
+        }
     }
 }
 
@@ -250,6 +271,11 @@ component MoreRowView inherits Rectangle {
 
 export component Sidebar inherits Rectangle {
     background: Theme.surface-alt;
+    probe-w := Text { visible: false; text: "W"; font-size: Theme.font-size; }
+    probe-at := Text { visible: false; text: "@"; font-size: Theme.font-size; }
+    property <length> glyph-width: max(probe-w.preferred-width, probe-at.preferred-width) + 1px;
+    changed width => { SidebarState.title-available-width = max(1px, self.width - 112px) / 1px; SidebarState.budget-changed(); }
+    changed glyph-width => { SidebarState.title-character-width = glyph-width / 1px; SidebarState.budget-changed(); }
 
     property <bool> want-search-focus: SidebarState.focus-search-requested;
     changed want-search-focus => {
@@ -259,6 +285,8 @@ export component Sidebar inherits Rectangle {
         }
     }
     init => {
+        SidebarState.title-available-width = max(1px, self.width - 112px) / 1px;
+        SidebarState.title-character-width = glyph-width / 1px;
         if SidebarState.focus-search-requested {
             search.focus();
             SidebarState.focus-search-requested = false;
@@ -337,7 +365,14 @@ export component Sidebar inherits Rectangle {
                     if row.kind == SidebarRowKind.more: MoreRowView { }
                 }
 
+                changed visible-height => {
+                    SidebarState.viewport-height = self.visible-height / 1px;
+                    SidebarState.viewport-changed();
+                }
                 changed content-y => {
+                    SidebarState.viewport-offset = -self.content-y / 1px;
+                    SidebarState.viewport-height = self.visible-height / 1px;
+                    SidebarState.viewport-changed();
                     if SidebarState.has-more && !SidebarState.loading-more
                         && -self.content-y + self.visible-height >= self.content-height - 120px {
                         SidebarState.load-more();

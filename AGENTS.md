@@ -23,9 +23,10 @@ all working features; `SPEC.md` records focused invariants and regressions.
   provides it and V5 native provider tests pass. Helpers stay pristine. Never restore a fork.
 - `.upstream/` is ignored, pristine stable source for runtime helpers and
   materializing the backport. Do not add product code there or commit its contents.
-- The Slint vendor directory carries one wrapped-link hit-testing fix; preserve
-  its licenses. Remove the patch only after upstream fixes it and Windows
-  rendering/link tests verify it. GUI crates do not link CLI/TUI/exec frontends.
+- The Slint vendor directory carries a wrapped-link fix and narrow rich-text
+  selection/cursor bridges; see third_party/slint/README.md. Preserve licenses.
+  Remove each change only when upstream public APIs cover it and Windows
+  rendering/link/selection tests verify it. GUI crates do not link CLI/TUI/exec frontends.
 
 ## Development and verification
 
@@ -42,6 +43,15 @@ all working features; `SPEC.md` records focused invariants and regressions.
   source changes and development verification. Defer Mac release builds/signing.
 - Keep UI-thread callbacks free of blocking I/O; use the existing backend pump
   and typed requests. Keep transcript virtualization and memory limits.
+- Purpose summaries consume completed user requests only; use the existing fast
+  model selector with normal-model fallback. Never persist their temporary
+  conversations, overwrite manual names, or summarize assistant/tool output.
+  Cache results in resolved CODEX_HOME; debounce visible-row resize updates ten
+  seconds using cached tooltips only. Preserve restart/stale-result safeguards
+  and sticky manual-name history when changing the cache format.
+- Conversation selection must follow shaped glyphs, wrapping, clipping and UTF-8
+  graphemes. Keep native text input selection and rich links working. Run both
+  dev/windows-smoke.py and dev/windows-purpose-selection-smoke.py on Windows.
 - Answer every synchronous server request exactly once. Async questions use
   ordinary user messages and remain answerable after the requesting turn ends.
 - Use supported RTK filters when they reduce verbose output; machine-readable

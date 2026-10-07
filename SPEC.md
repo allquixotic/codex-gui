@@ -17,6 +17,7 @@ Broader GUI contract: repository `GUI.md`.
 - I.paint: Windows restore, remote desktop exposure, existing redraw events.
 - I.questions: synchronous server-request forms; asynchronous message forms and ordinary send/steer/queue replies.
 - I.speed: provider-catalog speed picker; thread/settings/update and turn/start.
+- I.summaries: sidebar titles/tooltips, resize handle; GUI-only persistent cache, ephemeral fast-model requests.
 - I.links: glyph hover, Copy link, Open in browser, Open file.
 
 ## §V INVARIANTS
@@ -28,6 +29,12 @@ V4: Copy/tooltip ! preserve file line and resolve relative path; browser action 
 V5: Speed choices and actual request tiers ! follow provider catalog and feature requirements; Standard ! send explicit default; model switch ! reset unsupported tier; resume/fork ! preserve reported tier.
 
 V6: Async questions ! show choices + free text; no send before Submit; exact message/index reply identity; turn end ! retain unanswered fields; rejected send ! preserve drafts; history replay ! deduplicate; transcript ! render question once.
+
+V7: Purpose inference ! consume only completed user requests, never assistant/tool context; one turn ! return title + plain-text tooltip; ephemeral ! no listed thread/rollout; fast model failure ! retry normal model.
+
+V8: Cache ! survive restart under resolved CODEX_HOME; any manual rename ! permanently protect title; tooltip ! remain generated; resize ! debounce ten seconds, visible rows only, cached tooltips only; title ! fit actual row without ellipses; stale result ! never replace newer context/width/name.
+
+V9: Conversation selection ! match rendered rich/plain glyphs and UTF-8 graphemes; pointer drag + Shift/arrows ! select; Ctrl/Cmd+C and menu Copy ! selected plain text; links and markdown ! preserve; tab change ! clear; selected scene ! remain bounded.
 
 ## §T TASKS
 id|status|task|cites
@@ -41,6 +48,10 @@ T5|x|Add catalog-driven inference speed and verify upstream migration|V5,I.speed
 T6|.|Extract standalone GUI, pin latest stable, verify Windows CI, commit/push/release|GUI.md §19
 
 T7|.|Fix asynchronous question forms, reply delivery, history replay and Windows interaction verification|V6,I.questions
+
+T8|.|Persistent background purpose summaries, manual-title protection and resizable sidebar; verify and ship next release|V7,V8,I.summaries
+
+T9|.|Selectable user/assistant conversation text, keyboard/clipboard/context menu; verify and ship with T8|V9,I.links
 
 ## §B BUGS
 id|date|cause|fix

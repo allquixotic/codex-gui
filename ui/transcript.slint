@@ -92,6 +92,12 @@ export global TranscriptState {
     // `requested`: the user asked (the pill), rather than scrolling near
     // the top.
     callback load-older(/* requested */ bool);
+    in property <bool> selection-active;
+    callback selection-pointer(float, float, bool, bool);
+    callback selection-key(string, bool, bool) -> bool;
+    callback selection-copy();
+    callback selection-clear();
+    callback selection-blur();
     callback copy-block(string);
     callback toggle-block(string);
     // Row actions: "copy", "copy-message", "quote", "forward", "toggle",
@@ -297,6 +303,7 @@ component SelectableText inherits Rectangle {
                 height: self.preferred-height;
                 text: root.text;
                 read-only: true;
+                changed has-focus => { if self.has-focus { TranscriptState.selection-clear(); } }
                 single-line: false;
                 wrap: TextWrap.word-wrap;
                 font-family: root.mono ? Theme.mono-font : Theme.ui-font;
@@ -318,6 +325,7 @@ component SelectableText inherits Rectangle {
 // when moving into the native menu dismisses the hover tooltip.
 component LinkInteraction inherits Rectangle {
     in property <string> target;
+    in property <bool> selectable: false;
     in property <bool> message: false;
     in property <string> row-id;
     out property <bool> has-hover <=> touch.has-hover;
@@ -325,6 +333,8 @@ component LinkInteraction inherits Rectangle {
     property <string> menu-link;
     property <Point> hover-point;
     property <bool> hover-point-valid;
+    property <Point> selection-origin;
+    property <bool> selection-dragged;
     callback clicked();
     clicked => {
         if root.link != "" { TranscriptState.link-clicked(root.link); }
@@ -362,74 +372,104 @@ component LinkInteraction inherits Rectangle {
         }
     }
 
-    menu := ContextMenuArea {
-        enabled: root.message || root.link != "";
-        Menu {
-            if root.menu-link != "": MenuItem {
-                title: "Copy link";
-                activated => { TranscriptState.link-action(root.menu-link, "copy"); }
-            }
-            if root.menu-link != "": MenuItem {
-                title: "Open in browser";
-                activated => { TranscriptState.link-action(root.menu-link, "browser"); }
-            }
-            if root.menu-link != "" && TranscriptState.link-is-file(root.menu-link): MenuItem {
-                title: "Open file";
-                activated => { TranscriptState.link-clicked(root.menu-link); }
-            }
-            if root.menu-link != "" && root.message: MenuSeparator { }
-            if root.message: MenuItem {
-                title: "Copy Message as Markdown";
-                activated => { TranscriptState.block-action(root.row-id, "copy-message"); }
-            }
-            if root.message: MenuItem {
-                title: "Copy Paragraph";
-                activated => { TranscriptState.block-action(root.row-id, "copy"); }
-            }
-            if root.message: MenuItem {
-                title: "View Message as Text";
-                activated => { TranscriptState.block-action(root.row-id, "view-text"); }
-            }
-            if root.message: MenuSeparator { }
-            if root.message: MenuItem {
-                title: "Quote in Reply";
-                activated => { TranscriptState.block-action(root.row-id, "quote"); }
-            }
-            if root.message: MenuItem {
-                title: "Send to Tab…";
-                activated => { TranscriptState.block-action(root.row-id, "forward"); }
-            }
+    selection-focus := FocusScope {
+        changed has-focus => { if !self.has-focus { TranscriptState.selection-blur(); } }
+        key-pressed(event) => {
+            let key = event.text == Key.LeftArrow ? "left" : event.text == Key.RightArrow ? "right"
+                : event.text == Key.UpArrow ? "up" : event.text == Key.DownArrow ? "down"
+                : event.text == Key.Home ? "home" : event.text == Key.End ? "end"
+                : event.text == Key.Escape ? "escape" : event.text;
+            root.selectable && TranscriptState.selection-key(key, event.modifiers.shift, event.modifiers.control || event.modifiers.meta) ? accept : reject
         }
-        touch := TouchArea {
-            mouse-cursor: root.link != "" ? pointer : default;
-            changed has-hover => {
-                if self.has-hover { root.restart-hover(); } else {
-                    root.hide-tooltip(); root.link = ""; root.hover-point-valid = false;
+        menu := ContextMenuArea {
+            enabled: root.message || root.link != "" || root.selectable || TranscriptState.selection-active;
+            Menu {
+                if root.selectable: MenuItem {
+                    title: "Copy";
+                    enabled: TranscriptState.selection-active;
+                    activated => { TranscriptState.selection-copy(); }
+                }
+                if root.selectable: MenuItem {
+                    title: "Select All";
+                    activated => { selection-focus.focus(); TranscriptState.selection-key("a", false, true); }
+                }
+                if root.menu-link != "": MenuItem {
+                    title: "Copy link";
+                    activated => { TranscriptState.link-action(root.menu-link, "copy"); }
+                }
+                if root.menu-link != "": MenuItem {
+                    title: "Open in browser";
+                    activated => { TranscriptState.link-action(root.menu-link, "browser"); }
+                }
+                if root.menu-link != "" && TranscriptState.link-is-file(root.menu-link): MenuItem {
+                    title: "Open file";
+                    activated => { TranscriptState.link-clicked(root.menu-link); }
+                }
+                if root.menu-link != "" && root.message: MenuSeparator { }
+                if root.message: MenuItem {
+                    title: "Copy Message as Markdown";
+                    activated => { TranscriptState.block-action(root.row-id, "copy-message"); }
+                }
+                if root.message: MenuItem {
+                    title: "Copy Paragraph";
+                    activated => { TranscriptState.block-action(root.row-id, "copy"); }
+                }
+                if root.message: MenuItem {
+                    title: "View Message as Text";
+                    activated => { TranscriptState.block-action(root.row-id, "view-text"); }
+                }
+                if root.message: MenuSeparator { }
+                if root.message: MenuItem {
+                    title: "Quote in Reply";
+                    activated => { TranscriptState.block-action(root.row-id, "quote"); }
+                }
+                if root.message: MenuItem {
+                    title: "Send to Tab…";
+                    activated => { TranscriptState.block-action(root.row-id, "forward"); }
                 }
             }
-            clicked => { root.hide-tooltip(); root.update-link(); root.clicked(); }
-            pointer-event(event) => {
-                if event.kind == PointerEventKind.move {
-                    // `moved` only fires while dragging. Pointer events also
-                    // cover normal hover; ignore synthetic unchanged positions.
-                    if !root.hover-point-valid || self.mouse-x != root.hover-point.x || self.mouse-y != root.hover-point.y {
-                        root.restart-hover();
+            touch := TouchArea {
+                mouse-cursor: root.link != "" ? pointer : root.selectable ? text : default;
+                changed has-hover => {
+                    if self.has-hover { root.restart-hover(); } else {
+                        root.hide-tooltip(); root.link = ""; root.hover-point-valid = false;
                     }
-                } else {
-                    root.hide-tooltip();
-                    if event.button == PointerEventButton.right && event.kind == PointerEventKind.down {
-                        root.update-link();
-                        root.menu-link = root.link;
-                        if root.message || root.menu-link != "" {
-                            menu.show({ x: self.mouse-x, y: self.mouse-y });
+                }
+                clicked => { root.hide-tooltip(); root.update-link(); if !root.selection-dragged { root.clicked(); } }
+                pointer-event(event) => {
+                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.down && root.selectable {
+                        root.selection-origin = { x: self.mouse-x, y: self.mouse-y };
+                        root.selection-dragged = false;
+                        selection-focus.focus();
+                        TranscriptState.selection-pointer((self.absolute-position.x + self.mouse-x) / 1px, (self.absolute-position.y + self.mouse-y) / 1px, true, false);
+                    }
+                    if event.kind == PointerEventKind.move {
+                        if root.selectable && self.pressed {
+                            root.selection-dragged = root.selection-dragged || abs(self.mouse-x - root.selection-origin.x) > 1px || abs(self.mouse-y - root.selection-origin.y) > 1px;
+                            TranscriptState.follow-tail = false;
+                            TranscriptState.selection-pointer((self.absolute-position.x + self.mouse-x) / 1px, (self.absolute-position.y + self.mouse-y) / 1px, false, false);
+                        }
+                        // `moved` only fires while dragging. Pointer events also
+                        // cover normal hover; ignore synthetic unchanged positions.
+                        if !self.pressed && (!root.hover-point-valid || self.mouse-x != root.hover-point.x || self.mouse-y != root.hover-point.y) {
+                            root.restart-hover();
+                        }
+                    } else {
+                        root.hide-tooltip();
+                        if event.button == PointerEventButton.right && event.kind == PointerEventKind.down {
+                            root.update-link();
+                            root.menu-link = root.link;
+                            if root.message || root.menu-link != "" || root.selectable {
+                                menu.show({ x: self.mouse-x, y: self.mouse-y });
+                            }
                         }
                     }
                 }
-            }
-            scroll-event(event) => {
-                root.hide-tooltip();
-                if event.delta-y > 0px { TranscriptState.follow-tail = false; }
-                reject
+                scroll-event(event) => {
+                    root.hide-tooltip();
+                    if event.delta-y > 0px { TranscriptState.follow-tail = false; }
+                    reject
+                }
             }
         }
     }
@@ -454,7 +494,7 @@ component RichText inherits Rectangle {
         link-color: Theme.accent;
         horizontal-alignment: root.alignment;
     }
-    LinkInteraction { message: root.message; row-id: root.row-id; }
+    LinkInteraction { selectable: true; message: root.message; row-id: root.row-id; }
 }
 
 // Disclosure chevron.

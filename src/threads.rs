@@ -984,6 +984,7 @@ impl AppController {
                             .thread_tab(index)
                             .and_then(|thread| thread.thread_id.clone())
                         {
+                            app.purpose_manual_name(&thread_id, &name);
                             app.backend.fire::<ThreadSetNameResponse, _>(|request_id| {
                                 ClientRequest::ThreadSetName {
                                     request_id,

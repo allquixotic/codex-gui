@@ -1,12 +1,23 @@
-# Slint link hit-test patch
+# Slint 1.18.1 GUI bridges
 
-`i-slint-core` is the unmodified crates.io 1.18.1 source package except for
-`textlayout/sharedparley.rs`: accumulate (`|=`) hits across a selection's
-wrapped-line rectangles, instead of overwriting the result for every line.
-Otherwise only the final line of a wrapped link can be clicked or hovered.
-Cargo's downloaded-package metadata and nested lockfile are omitted.
+`i-slint-core` is the crates.io 1.18.1 source package with three changed files.
+Cargo downloaded-package metadata and its nested lockfile are omitted. Slint
+licenses and copyright notices are preserved unchanged.
 
-The GUI regression fixture checks destinations on multiple wrapped lines and
-clipping. Keep this patch until an upstream Slint release includes the fix,
-then remove the Cargo override and this directory together. Slint licenses
-and copyright notices are included unchanged in the source package.
+- `textlayout/sharedparley.rs`: accumulate wrapped-link rectangle hits (`|=`),
+  so every wrapped line can be clicked or hovered. Also expose a narrow
+  `rich_text_cursor` bridge to the existing cached shaped layout and draw
+  rich selections/carets using native selection geometry.
+- `items/text.rs`: internal rich-text anchor/cursor, selection colors and caret
+  properties. These add no Slint language API or new layout pass.
+- `item_rendering.rs`: forward these properties through `RenderText`, retaining
+  zero-selection defaults for ordinary text. All renderers share the layout.
+
+`src/window_runtime.rs` checks wrapped links, clipping, selection invalidation
+and painted highlights with the software renderer on Windows.
+`dev/windows-purpose-selection-smoke.py` checks real pointer/keyboard input and
+clipboard output. Never execute rendering or GUI tests on Sean's Mac.
+
+Keep each bridge until an upstream Slint release provides the corresponding
+public behavior. Remove the Cargo override and vendor directory only after all
+bridges can use upstream APIs and Windows rendering/interaction tests pass.

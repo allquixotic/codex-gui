@@ -44,6 +44,8 @@ pub(crate) enum Step {
     WaitReady(u64),
     /// Wait until the active thread has an id and no running turn.
     WaitIdle(u64),
+    /// Wait for the active thread's cached purpose and background queue to settle.
+    WaitPurpose(u64),
     /// Open a new thread tab in this folder.
     NewThread(PathBuf),
     /// Start a thread in this folder through the folder-trust check.
@@ -112,6 +114,8 @@ pub(crate) enum Step {
     /// Press and release a key on the focused widget: `"escape"`,
     /// `"return"`, `"tab"`, or literal text.
     Key(String),
+    /// Glyph-positioned drag/click selection and clipboard evidence (Windows tests).
+    Selection(Vec<String>),
     /// A left-button pointer event at logical `[x, y]`: `["press", x, y]`,
     /// `["move", x, y]`, or `["release", x, y]`.
     Pointer((String, f32, f32)),
@@ -200,7 +204,7 @@ impl AppController {
             };
             eprintln!("codex-gui automation: {step:?}");
             match step {
-                Step::Wait(_) | Step::WaitReady(_) | Step::WaitIdle(_) => {
+                Step::Wait(_) | Step::WaitReady(_) | Step::WaitIdle(_) | Step::WaitPurpose(_) => {
                     if let Some(automation) = self.automation.as_mut() {
                         automation.waiting = Some((step, Instant::now()));
                     }
@@ -217,6 +221,22 @@ impl AppController {
                             let query = args.get(1).cloned().unwrap_or_default();
                             state.set_search_text(query.as_str().into());
                             state.invoke_search_edited(query.into());
+                        }
+                        Some("width") => {
+                            if let Some(width) =
+                                args.get(1).and_then(|value| value.parse::<f32>().ok())
+                            {
+                                self.window
+                                    .global::<crate::ui::AppState>()
+                                    .set_sidebar_width(width);
+                            }
+                        }
+                        Some("dump") => {
+                            if let Some(path) = args.get(1) {
+                                use slint::Model;
+                                let rows = state.get_rows().iter().filter(|row| row.kind == crate::ui::SidebarRowKind::Thread).map(|row| serde_json::json!({"id":row.id.as_str(),"title":row.title.as_str(),"tooltip":row.tooltip.as_str(),"generated":row.generated_title})).collect::<Vec<_>>();
+                                let _ = std::fs::write(path, serde_json::json!({"rows":rows,"maximum":self.purpose_maximum_for_test(),"width":self.prefs.sidebar_width}).to_string());
+                            }
                         }
                         Some("log") => {
                             use slint::Model;
@@ -317,13 +337,8 @@ impl AppController {
                 Step::Mark(name) => crate::perf::mark(&name),
                 Step::Log(message) => eprintln!("codex-gui automation: {message}"),
                 Step::Transcript(command) => self.transcript_automation(&command),
-                Step::Key(key) => {
-                    let text = key_text(&key);
-                    self.automation_dispatch(vec![
-                        slint::platform::WindowEvent::KeyPressed { text: text.clone() },
-                        slint::platform::WindowEvent::KeyReleased { text },
-                    ]);
-                }
+                Step::Selection(args) => self.selection_automation(&args),
+                Step::Key(key) => self.automation_dispatch(key_events(&key)),
                 Step::Pointer((kind, x, y)) => {
                     let position = slint::LogicalPosition::new(x, y);
                     let button = if kind.starts_with("right-") {
@@ -429,7 +444,7 @@ impl AppController {
     /// Dispatches input on the next event-loop turn, like real input:
     /// callbacks that answer synchronously need the controller, which is
     /// borrowed while a step runs. Events keep their order across steps.
-    fn automation_dispatch(&self, events: Vec<slint::platform::WindowEvent>) {
+    pub(crate) fn automation_dispatch(&self, events: Vec<slint::platform::WindowEvent>) {
         let schedule = INPUT_QUEUE.with(|queue| {
             let mut queue = queue.borrow_mut();
             let was_empty = queue.is_empty();
@@ -456,6 +471,9 @@ impl AppController {
             Step::Wait(ms) => elapsed >= Duration::from_millis(*ms),
             Step::WaitReady(timeout) => {
                 self.backend.is_ready() || timed_out(elapsed, *timeout, "server ready")
+            }
+            Step::WaitPurpose(timeout) => {
+                self.purpose_idle_for_test() || timed_out(elapsed, *timeout, "purpose cache")
             }
             Step::WaitIdle(timeout) => {
                 let idle = self
@@ -494,12 +512,50 @@ impl AppController {
     }
 }
 
+fn key_events(chord: &str) -> Vec<slint::platform::WindowEvent> {
+    use slint::platform::{Key, WindowEvent};
+    let parts = chord.split('+').collect::<Vec<_>>();
+    let modifiers = parts[..parts.len().saturating_sub(1)]
+        .iter()
+        .filter_map(|name| match name.to_ascii_lowercase().as_str() {
+            "ctrl" | "control" => Some(Key::Control),
+            "shift" => Some(Key::Shift),
+            "alt" => Some(Key::Alt),
+            "meta" | "cmd" => Some(Key::Meta),
+            _ => None,
+        })
+        .map(slint::SharedString::from)
+        .collect::<Vec<_>>();
+    let text = key_text(parts.last().copied().unwrap_or(chord));
+    let mut events = modifiers
+        .iter()
+        .map(|text| WindowEvent::KeyPressed { text: text.clone() })
+        .collect::<Vec<_>>();
+    events.extend([
+        WindowEvent::KeyPressed { text: text.clone() },
+        WindowEvent::KeyReleased { text },
+    ]);
+    events.extend(
+        modifiers
+            .into_iter()
+            .rev()
+            .map(|text| WindowEvent::KeyReleased { text }),
+    );
+    events
+}
+
 /// Slint key text for a `key` step.
 fn key_text(key: &str) -> slint::SharedString {
     match key.to_ascii_lowercase().as_str() {
         "escape" | "esc" => slint::platform::Key::Escape.into(),
         "return" | "enter" => slint::platform::Key::Return.into(),
         "tab" => slint::platform::Key::Tab.into(),
+        "left" => slint::platform::Key::LeftArrow.into(),
+        "right" => slint::platform::Key::RightArrow.into(),
+        "up" => slint::platform::Key::UpArrow.into(),
+        "down" => slint::platform::Key::DownArrow.into(),
+        "home" => slint::platform::Key::Home.into(),
+        "end" => slint::platform::Key::End.into(),
         _ => key.into(),
     }
 }

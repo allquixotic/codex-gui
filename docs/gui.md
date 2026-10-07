@@ -57,13 +57,22 @@ the app was started from, or appear in a message box when there is none.
   scrolls (mouse wheel or trackpad); the **⌄** button at its end lists every
   tab. "Close other tabs" asks once for all tabs that are still working.
 - **Sidebar.** All your threads grouped by folder, with search and an archived
-  view. Click to open; right-click for more actions. In a narrow window the
+  view. Click to open; right-click for more actions. Drag its right edge to resize.
+  Automatic short labels fit the row; hover for a wrapping purpose summary.
+  Both summaries use your processed requests, with the fast model and normal
+  model fallback, and are cached under `$CODEX_HOME/gui-thread-summaries.json`.
+  Reopening reuses the cache. Manual renames permanently protect the title;
+  tooltips still update. Resizing waits ten quiet seconds before shortening
+  visible rows from their cached tooltip summaries. In a narrow window the
   sidebar and the info pane open over the content instead of beside it
   (`Esc` or a click outside closes them).
 - **Transcript.** Agent replies render as formatted text with headings, lists,
   tables and code blocks (each with Copy). Commands, file edits, tool calls,
   plans and sub-agents appear as compact cards you can expand. Long threads
   load older history as you scroll up, so memory does not grow with length.
+  Drag across user or assistant text, or click then hold Shift and use arrows
+  to select. Ctrl+C (Cmd+C on macOS) or right-click **Copy** copies the selected
+  text. Markdown and links retain their formatting and actions.
 - **Composer.** `Enter` sends and `Shift+Enter` adds a line (configurable).
   Type `@` to mention a file, `/` for commands, `$` for skills. Paste or
   attach images. While the agent works, typing steers the running turn (or

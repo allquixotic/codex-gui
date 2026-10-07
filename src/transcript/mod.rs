@@ -31,6 +31,7 @@ mod markdown;
 mod model;
 mod output;
 pub(crate) mod render;
+pub(crate) mod selection;
 mod store;
 mod streaming;
 
@@ -125,6 +126,19 @@ fn phase_code(phase: ThreadPhase) -> i32 {
 impl AppController {
     pub(crate) fn transcript_bind(&mut self) {
         let state = self.window.global::<TranscriptState>();
+        state.on_selection_pointer(|x, y, start, extend| {
+            crate::ui_thread::with_app(move |app| app.selection_pointer(x, y, start, extend))
+        });
+        state.on_selection_copy(|| crate::ui_thread::with_app(AppController::selection_copy));
+        state.on_selection_clear(|| crate::ui_thread::with_app(AppController::selection_clear));
+        state.on_selection_blur(|| crate::ui_thread::with_app(AppController::selection_blur));
+        state.on_selection_key(|key, shift, primary| {
+            let mut handled = false;
+            crate::ui_thread::with_app_now(|app| {
+                handled = app.selection_key(key.as_str(), shift, primary)
+            });
+            handled
+        });
         state.on_link_clicked(|url| {
             let url = url.to_string();
             crate::ui_thread::with_app(move |app| app.transcript_open_link(&url));
@@ -258,6 +272,10 @@ impl AppController {
             .and_then(|index| self.thread_tab(index))
             .map(|thread| thread.transcript.model())
             .unwrap_or_default();
+        let selection_changed = self.window.global::<TranscriptState>().get_blocks() != model;
+        if selection_changed {
+            self.selection_clear();
+        }
         let state = self.window.global::<TranscriptState>();
         // `show_active` also runs for unrelated tab-strip changes; only a
         // different transcript resets the scroll position.
@@ -1048,6 +1066,11 @@ impl AppController {
             .unwrap_or_default();
         match links::classify_link(url, &cwd) {
             LinkTarget::Web(url) => {
+                if self.automation.is_some() {
+                    // Test the real glyph/click route without starting another app.
+                    eprintln!("codex-gui automation: web link activated: {url}");
+                    return;
+                }
                 if let Err(err) = webbrowser::open(&url) {
                     self.toast(format!("Could not open link: {err}"));
                 }

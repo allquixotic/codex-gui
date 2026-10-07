@@ -249,6 +249,12 @@ pub struct StyledTextItem {
     pub max_lines: Property<i32>,
     pub link_clicked: Callback<StringArg>,
     pub link_color: Property<Color>,
+    // GUI bridge: selection is kept outside the public Slint language API.
+    pub selection_anchor: Property<i32>,
+    pub selection_cursor: Property<i32>,
+    pub selection_background: Property<Color>,
+    pub selection_foreground: Property<Color>,
+    pub selection_caret_visible: Property<bool>,
     pub cached_rendering_data: CachedRenderingData,
 }
 
@@ -420,6 +426,17 @@ impl RenderString for StyledTextItem {
 }
 
 impl RenderText for StyledTextItem {
+    fn selection_range(self: Pin<&Self>) -> core::ops::Range<usize> {
+        let a = self.selection_anchor().max(0) as usize;
+        let b = self.selection_cursor().max(0) as usize;
+        a.min(b)..a.max(b)
+    }
+    fn selection_colors(self: Pin<&Self>) -> (Color, Color) {
+        (self.selection_background(), self.selection_foreground())
+    }
+    fn selection_caret(self: Pin<&Self>) -> Option<usize> {
+        self.selection_caret_visible().then(|| self.selection_cursor().max(0) as usize)
+    }
     fn target_size(self: Pin<&Self>) -> LogicalSize {
         LogicalSize::from_lengths(self.width(), self.height())
     }
