@@ -71,7 +71,8 @@ all working features; `SPEC.md` records focused invariants and regressions.
   Helpers must use the same stable backend as the GUI. `runtime-helpers/Cargo.toml`
   compiles pristine upstream entrypoints using our root lockfile and exact Git
   dependencies. Never build against the full upstream workspace lockfile.
-  Keep helper package version/source paths and Windows API features in sync
+  Preserve the setup helper’s scoped asInvoker manifest in runtime-helpers/build.rs.
+  Keep helper package version/source paths, manifest link flags and Windows API features in sync
   when updating the stable backend.
 - Keep Apache LICENSE, upstream attribution in NOTICE, third-party licenses,
   user guide and exact build/pin metadata in packages.
