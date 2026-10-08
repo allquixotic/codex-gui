@@ -1333,3 +1333,39 @@ bytes and retain offline Sigstore bundles. Mac builds/signing run in a temporary
 one-job self-hosted Actions runner on Sean's Mac; manual main only, no exported
 keys, persistent runner service or GUI tests. Verify package hashes, provenance
 source/workflow and platform signatures before publishing; remove the runner.
+
+Published [v0.3.1](https://github.com/allquixotic/codex-gui/releases/tag/v0.3.1)
+from `084b9f8271a61abee6e22630df91f3c8265062dc`, retaining stable Codex
+0.161.0 (`979011409de0a60b52f179721948e65531d26144`). The release has both
+packages, checksums, platform Sigstore bundles and public signing evidence.
+
+[Windows run 37721517380](https://github.com/allquixotic/codex-gui/actions/runs/37721517380)
+passed all 629 tests, question/purpose/selection interaction gates, Azure signing
+and attestation. The downloaded signed package independently passed trusted
+publisher/RFC3161 timestamp checks for all four executables on `games`; their
+hashes matched the attested ZIP. Helper dispatch/startup/asInvoker metadata,
+native Copy menu driver, suggested/free-text questions and software/GPU purpose,
+resize, persistence, manual-name protection, drag/keyboard selection and
+clipboard/menu checks all passed. Mock inference used isolated test homes.
+
+[Mac run 37721517143](https://github.com/allquixotic/codex-gui/actions/runs/37721517143)
+passed 638 headless tests, real architecture/dependency guards and signed
+helper IPC/JavaScript execution on arm64 and x86_64. The signed app and DMG
+received Accepted notarizations `bb2c0036-f9ca-471a-abb8-502dea362686` and
+`5bfe9287-6799-434b-b583-e9431e6d5499`; both logs had no issues. App/DMG staples
+validated and Gatekeeper accepted both plus the app inside the mounted DMG.
+The extracted Application certificate matched the pinned fingerprint and
+September 17, 2031 expiry. No Mac GUI was launched or tested.
+
+Both online attestations and attached bundles verified against the exact source
+digest, main ref and signer workflows; Windows additionally required a hosted
+runner. GitHub upload digests matched all eight assets before publication. The
+one-job Mac runner deregistered itself and its temporary checkout was removed;
+final packages and public evidence remain in ignored `dist/release-0.3.1`.
+
+Final SHA-256:
+
+```text
+e582f2d909d635cb6cf900ca00092adc56e3b8b37502dffa79103b1c9207d34a  codex-gui-0.3.1-windows-x64.zip
+73b8aba2ace06a39c5b44093d7abc1843b4ddab49447c5dfdc4f4ebf097cd891  codex-gui-0.3.1-macos-universal.dmg
+```

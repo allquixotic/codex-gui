@@ -56,7 +56,7 @@ T8|x|Persistent background purpose summaries, manual-title protection and resiza
 
 T9|x|Selectable user/assistant conversation text, keyboard/clipboard/context menu; verify and ship with T8|V9,I.links
 
-T10|.|Build, sign, notarize/staple and attest 0.3.1 Windows/Mac packages; verify exact bytes, publish and remove temporary runner|V10,I.distribution
+T10|x|Build, sign, notarize/staple and attest 0.3.1 Windows/Mac packages; verify exact bytes, publish and remove temporary runner|V10,I.distribution; GUI.md §25
 
 ## §B BUGS
 id|date|cause|fix
@@ -99,3 +99,5 @@ B19|2026-10-07|Installed Apple lipo rejects combined two-architecture -verify_ar
 B20|2026-10-07|allow-jit alone works on arm64 but signed x86_64 V8 traps during code-range setup; unsigned control passes and stable upstream already includes allow-unsigned-executable-memory|V10; reuse exact upstream helper entitlements, keep GUI unentitled, force both architectures through signed IPC/JIT regression before notarization
 
 B21|2026-10-07|Native lzma-sys pkg-config discovery links MacPorts liblzma and adds its search path, also selecting MacPorts libiconv in the ARM GUI|V10; use supported LZMA_API_STATIC build switch, check dependencies before packaging, and test rejection with a real temporary dylib
+
+Release evidence: v0.3.1, source 084b9f8271a61abee6e22630df91f3c8265062dc; Windows run 37721517380 passed 629 tests, interaction gates, Azure signing and attestation. The exact signed ZIP passed signatures/timestamps, helper checks, question forms and software/GPU purpose/selection tests on games. Mac run 37721517143 passed 638 headless tests, dual-architecture signed helper IPC/JIT, both Accepted notarizations, staples and Gatekeeper including the mounted app. Both online/bundled attestations and all eight GitHub upload digests verified. Temporary Mac runner deregistered and removed; no Mac GUI launched. See GUI.md §25.
