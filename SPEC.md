@@ -45,13 +45,13 @@ T4|x|Verify, commit, push, publish Windows package, clean outputs|V1,V2,V3,V4; G
 
 T5|x|Add catalog-driven inference speed and verify upstream migration|V5,I.speed
 
-T6|.|Extract standalone GUI, pin latest stable, verify Windows CI, commit/push/release|GUI.md §19
+T6|x|Extract standalone GUI, pin latest stable, verify Windows CI, commit/push/release|GUI.md §19
 
-T7|.|Fix asynchronous question forms, reply delivery, history replay and Windows interaction verification|V6,I.questions
+T7|x|Fix asynchronous question forms, reply delivery, history replay and Windows interaction verification|V6,I.questions
 
-T8|.|Persistent background purpose summaries, manual-title protection and resizable sidebar; verify and ship next release|V7,V8,I.summaries
+T8|x|Persistent background purpose summaries, manual-title protection and resizable sidebar; verify and ship next release|V7,V8,I.summaries
 
-T9|.|Selectable user/assistant conversation text, keyboard/clipboard/context menu; verify and ship with T8|V9,I.links
+T9|x|Selectable user/assistant conversation text, keyboard/clipboard/context menu; verify and ship with T8|V9,I.links
 
 ## §B BUGS
 id|date|cause|fix
@@ -86,3 +86,5 @@ B16|2026-10-07|Mock model catalog omitted the canonical instruction template req
 B17|2026-10-07|Rich shaping gave every paragraph range 0..0, clamping cursor geometry and suppressing paint; native user-text right clicks were grabbed before the parent menu; synthetic Ctrl chords used uppercase text|V9; assign rich plain-text byte ranges, explicitly open native text menus, normalize unshifted primary chords, and assert real cursor progression/round-trip plus drag/clipboard/menu behavior
 
 B18|2026-10-07|Completed-turn summary scheduling did not mark the initial missing-cache attempt, allowing sidebar refresh to invalidate and duplicate in-flight inference|V7; share queue bookkeeping and verify exactly two purpose calls for two processed requests on software and GPU renderers
+
+Release evidence: v0.3.0, commit e3494e5943458e61b5209ba7761bdbd02f4922e1; hosted workflow 37697823119 passed all 629 Windows tests and interaction/package gates. The exact ZIP passed software/GPU and question-form smoke tests on games, helper dispatch/startup/manifest checks, and GitHub digest verification. Mac: 638 headless tests and clean Clippy; no GUI launch. See GUI.md §24.

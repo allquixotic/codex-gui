@@ -1,6 +1,6 @@
 # codex-gui: a native Slint front end for Codex
 
-Status: standalone `allquixotic/codex-gui` repository, product version 0.2.0.
+Status: standalone `allquixotic/codex-gui` repository, product version 0.3.0.
 The GUI source lives at the repository root (`src/`, `ui/`, `assets/`).
 It embeds stable Codex 0.161.0 at immutable release commit
 `979011409de0a60b52f179721948e65531d26144`, with one minimal Bedrock tier backport (see `patches/README.md`).
@@ -1278,3 +1278,32 @@ visible text and its endpoints, never the full conversation history, and is
 cleared when switching transcripts. Windows verification covers wrapped rich
 selection rendering, real drag/Shift-arrow input and clipboard contents. This
 ships together with section 22 in 0.3.0.
+
+
+## 24. Standalone release verification (0.3.0)
+
+Published [v0.3.0](https://github.com/allquixotic/codex-gui/releases/tag/v0.3.0)
+from `e3494e5943458e61b5209ba7761bdbd02f4922e1`, with stable Codex 0.161.0.
+[The hosted Windows workflow](https://github.com/allquixotic/codex-gui/actions/runs/37697823119)
+passed all 629 unit/rendering tests, question-form and purpose/selection smoke
+tests, and built the GUI plus all three pristine stable runtime helpers. Mac
+verification passed 638 headless tests and Clippy; no project GUI was launched
+or tested on Sean's Mac.
+
+The exact downloaded ZIP was verified for SHA-256, four Windows x64 PE binaries,
+stable pin/build metadata and license documents. Its executables passed software
+and GPU interaction tests on `games`: processed-user-only purpose input, Luna
+failure fallback, combined summaries, ten-second resize debounce, persistent
+cache, restart without inference, permanent manual-name protection, real drag
+and Shift/arrow selection, Ctrl+C and native Copy menus for user/assistant text,
+normal rich links, and suggested/free-text question submission. Embedded
+apply_patch dispatch, Code Mode host startup and the sandbox setup's asInvoker
+manifest also passed. GitHub asset digests matched both uploaded files before
+publication. The earlier helper-lockfile failure was resolved with the consumer
+helper manifest and root lockfile; 0.2.0 was never published.
+
+Windows CI keeps normal release optimization and static linking, with
+whole-program LTO disabled and 16 codegen units. The GUI executable build took
+about 14 minutes on the hosted runner, compared with 50 minutes in the earlier
+run. This reduces build time at the cost of a larger executable/package. The
+Windows x64 ZIP for 0.3.0 is approximately 151 MiB.
