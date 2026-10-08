@@ -88,7 +88,7 @@ impl Cache {
     }
 }
 
-/// Generated titles are ASCII and bounded by the measured widest glyph budget.
+/// Generated titles are ASCII and bounded by the measured representative glyph budget.
 /// Defensive fallback keeps whole words where possible, without adding ellipses.
 pub(super) fn fit_title(text: &str, maximum: usize) -> String {
     let cleaned = text.replace("...", "").replace('…', "");

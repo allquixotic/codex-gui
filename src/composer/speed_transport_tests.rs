@@ -38,6 +38,18 @@ async fn v5_bedrock_http_requests_forward_only_advertised_tiers() {
             ModelProviderInfo::create_amazon_bedrock_runtime_provider(None),
             "global.openai.gpt-6-astra",
         ),
+        (
+            ModelProviderInfo::create_amazon_bedrock_provider(None),
+            "openai.gpt-6.1-sol",
+        ),
+        (
+            ModelProviderInfo::create_amazon_bedrock_runtime_provider(None),
+            "us.openai.gpt-6.1-sol",
+        ),
+        (
+            ModelProviderInfo::create_amazon_bedrock_runtime_provider(None),
+            "global.openai.gpt-6.1-sol",
+        ),
     ] {
         let provider = create_model_provider(info.clone(), None);
         let model = provider

@@ -1,0 +1,51 @@
+diff --git a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
+--- a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
++++ b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
+@@ -138,6 +138,27 @@
+         validate_user_input_image_urls(&params.input)?;
+         let (thread_id, loaded_thread, source) = self.require_thread(&params.thread_id).await?;
+         ensure_direct_input_allowed(loaded_thread.as_deref(), &source)?;
++        // GUI pending-steer IDs are scoped to the client-authored message ID.
++        // Core applies the mutation under the same lock used by its consumer.
++        if let Some(client_id) = params.queued_submission_id.strip_prefix("gui-steer:") {
++            TurnRequestProcessor::validate_v2_input_limit(&params.input)?;
++            if params.input.is_empty() {
++                return Err(invalid_request("pending input cannot be empty"));
++            }
++            let thread = loaded_thread.ok_or_else(|| invalid_request("thread is not loaded"))?;
++            let input = params.input.into_iter().map(UserInput::into_core).collect();
++            let content = thread
++                .update_pending_user_input(client_id, Some(input))
++                .await
++                .ok_or_else(|| invalid_request("steered message has already been consumed"))?;
++            return Ok(ThreadQueueUpdateResponse {
++                queued_submission: QueuedSubmission {
++                    id: params.queued_submission_id.clone(),
++                    input: content.into_iter().map(Into::into).collect(),
++                    client_user_message_id: client_id.to_string(),
++                },
++            });
++        }
+         let queued_item = self
+             .service()?
+             .update(
+@@ -162,7 +183,18 @@
+         &self,
+         params: ThreadQueueDeleteParams,
+     ) -> Result<ThreadQueueDeleteResponse, JSONRPCErrorError> {
+-        let (thread_id, _, _) = self.require_thread(&params.thread_id).await?;
++        let (thread_id, loaded_thread, source) = self.require_thread(&params.thread_id).await?;
++        if let Some(client_id) = params.queued_submission_id.strip_prefix("gui-steer:") {
++            ensure_direct_input_allowed(loaded_thread.as_deref(), &source)?;
++            let deleted = match loaded_thread {
++                Some(thread) => thread
++                    .update_pending_user_input(client_id, None)
++                    .await
++                    .is_some(),
++                None => false,
++            };
++            return Ok(ThreadQueueDeleteResponse { deleted });
++        }
+         let deleted = self
+             .service()?
+             .delete(thread_id, params.queued_submission_id)

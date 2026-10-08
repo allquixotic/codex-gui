@@ -297,7 +297,8 @@ def plan_events(body, text):
             namespace="multi_agent_v1",
         )
     elif lowered.startswith("slow"):
-        yield from message_events("Streaming slowly so you can interrupt or steer me. " * 6, chunk=6, delay=0.12)
+        repeats = 12 if lowered.startswith(("slow pending", "slow steer")) else 6
+        yield from message_events("Streaming slowly so you can interrupt or steer me. " * repeats, chunk=6, delay=0.12)
     elif lowered.startswith("purpose-"):
         yield from message_events("ASSISTANT_SECRET must never enter purpose inference.\n\nSelection sample **bold** text and [a link](https://example.com).")
     else:
@@ -344,6 +345,8 @@ def structured_events(body):
         prompt = last_user_text(body) or ""
         updated = "USER_TWO" in prompt
         result = {"short": "Auth tests" if updated else "Fix auth", "tooltip": "Fix authentication and add regression tests." if updated else "Repair authentication."}
+        if "purpose-layout" in prompt:
+            result = {"short": "Review wide WWWW text", "tooltip": "Reviewing dashboard authentication, updating dependencies, validating test coverage and checking the release across supported systems. Keeping error messages clear and deployment steps easy to follow."}
         yield from message_events(json.dumps(result))
     elif "titles" in properties:
         prompt = last_user_text(body) or ""

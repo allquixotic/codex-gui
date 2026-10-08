@@ -54,6 +54,7 @@ export struct BlockData {
     message: bool,
     // Last row of a completed message: show Copy / Quote / Send to tab.
     footer: bool,
+    pending: bool,
 }
 
 export struct TranscriptViewport { x: float, y: float, width: float, height: float }
@@ -1592,6 +1593,14 @@ component BlockRow inherits Rectangle {
                 }
                 if root.block.kind == 18: CardHeaderRow {
                     block: root.block;
+                }
+                if root.block.pending: HorizontalLayout {
+                    alignment: start;
+                    LinkButton {
+                        text: "✎";
+                        clicked => { TranscriptState.block-action(root.block.id, "edit-pending"); }
+                        Tooltip { text: @markdown("Edit or delete this pending message"); }
+                    }
                 }
                 if root.block.footer: HorizontalLayout {
                     padding-top: Theme.pad-s;

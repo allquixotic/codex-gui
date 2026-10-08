@@ -115,25 +115,17 @@ export component AppearancePage inherits Rectangle {
                     title: "Composer";
                 }
                 PrefRow {
-                    title: "Enter sends the message";
-                    description: "When off, Enter adds a line and Ctrl+Enter (⌘+Enter on macOS) sends.";
-                    Switch {
-                        checked <=> SettingsState.pref-enter-sends;
-                        toggled => {
-                            SettingsState.pref-changed("enter-sends");
-                        }
-                    }
+                    title: "Send and queue";
+                    description: "Enter sends when idle, or queues until the entire running turn ends. Shift+Enter steers immediately. Alt+Enter adds a line.";
                 }
                 PrefRow {
-                    title: "Sending while the agent works";
-                    description: "Steer adds your message to the running turn. Queue holds it until the turn finishes.";
+                    title: "Cross-tab tool messages while busy";
+                    description: "Default for incoming tool messages. Your composer always has separate Queue and Steer controls.";
                     ComboBox {
                         width: root.combo-width;
                         model: ["Steer the running turn", "Queue for later"];
                         current-index <=> SettingsState.pref-busy-input;
-                        selected => {
-                            SettingsState.pref-changed("busy-input");
-                        }
+                        selected => { SettingsState.pref-changed("busy-input"); }
                     }
                 }
 

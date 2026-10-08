@@ -769,6 +769,7 @@ mod tests {
 
     fn turn(id: &str, items: &[&str]) -> Turn {
         Turn {
+            root_turn_id: None,
             id: id.to_string(),
             items: items.iter().map(|id| message(id)).collect(),
             items_view: TurnItemsView::Full,

@@ -1,0 +1,66 @@
+diff --git a/codex-rs/core/src/session/input_queue.rs b/codex-rs/core/src/session/input_queue.rs
+--- a/codex-rs/core/src/session/input_queue.rs
++++ b/codex-rs/core/src/session/input_queue.rs
+@@ -384,6 +384,39 @@
+         input: Vec<TurnInput>,
+     ) {
+         turn_state.lock().await.pending_input.items.extend(input);
++    }
++
++    /// Mutate only input still held by the active turn, before its consumer takes it.
++    #[expect(
++        clippy::await_holding_invalid_type,
++        reason = "active turn and pending input must be checked atomically"
++    )]
++    pub(crate) async fn update_pending_user_input(
++        &self,
++        active_turn: &Mutex<Option<ActiveTurn>>,
++        client_id: &str,
++        replacement: Option<Vec<UserInput>>,
++    ) -> Option<Vec<UserInput>> {
++        let active = active_turn.lock().await;
++        let active = active.as_ref()?;
++        let mut state = active.turn_state.lock().await;
++        let position = state.pending_input.items.iter().position(|input|
++            matches!(input, TurnInput::UserInput { client_id: Some(id), .. } if id == client_id)
++        )?;
++        if let Some(replacement) = replacement {
++            let TurnInput::UserInput { content, .. } = &mut state.pending_input.items[position]
++            else {
++                return None;
++            };
++            *content = replacement.clone();
++            Some(replacement)
++        } else {
++            let TurnInput::UserInput { content, .. } = state.pending_input.items.remove(position)
++            else {
++                return None;
++            };
++            Some(content)
++        }
+     }
+ 
+     pub(crate) async fn take_pending_input_for_turn_state(
+diff --git a/codex-rs/core/src/codex_thread.rs b/codex-rs/core/src/codex_thread.rs
+--- a/codex-rs/core/src/codex_thread.rs
++++ b/codex-rs/core/src/codex_thread.rs
+@@ -589,6 +589,19 @@
+         self.io.submit_turn_input(request, mode).await
+     }
+ 
++    /// Edit or remove a user steer only while it is pending consumption.
++    /// Returns None once input has been consumed; never changes recorded history.
++    pub async fn update_pending_user_input(
++        &self,
++        client_id: &str,
++        replacement: Option<Vec<codex_protocol::user_input::UserInput>>,
++    ) -> Option<Vec<codex_protocol::user_input::UserInput>> {
++        self.session
++            .input_queue
++            .update_pending_user_input(&self.session.active_turn, client_id, replacement)
++            .await
++    }
++
+     /// Persist whether this thread is eligible for future memory generation.
+     pub async fn set_thread_memory_mode(&self, mode: ThreadMemoryMode) -> anyhow::Result<()> {
+         self.session.set_thread_memory_mode(mode).await

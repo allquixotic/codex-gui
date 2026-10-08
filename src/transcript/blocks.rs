@@ -230,6 +230,7 @@ pub(crate) struct Block {
     pub(crate) message: bool,
     /// Last row of a completed message: shows the message actions bar.
     pub(crate) footer: bool,
+    pub(crate) pending: bool,
 }
 
 impl Block {
@@ -332,6 +333,7 @@ impl Block {
             copyable: self.copyable,
             message: self.message,
             footer: self.footer,
+            pending: self.pending,
         }
     }
 }

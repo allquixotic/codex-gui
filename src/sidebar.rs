@@ -7,6 +7,7 @@
 //! status dot; [`AppController::sidebar_on_tabs_changed`] updates those marks
 //! in place without refetching.
 
+mod activity;
 mod purpose;
 mod search;
 
@@ -76,7 +77,7 @@ impl ThreadSummary {
             id: thread.id.clone(),
             title: thread_title(thread.name.as_deref(), &thread.preview),
             cwd: thread.cwd.as_path().to_path_buf(),
-            updated_at: thread.updated_at,
+            updated_at: thread.recency_at.unwrap_or(thread.created_at),
         }
     }
 }
@@ -318,6 +319,7 @@ fn status_for_phase(phase: ThreadPhase) -> SidebarThreadStatus {
 #[derive(Default)]
 pub(crate) struct SidebarController {
     purpose: purpose::PurposeController,
+    activity: activity::ActivityController,
     /// Loaded threads in server order (all pages).
     threads: Vec<ThreadSummary>,
     history_hits: Vec<ThreadSummary>,
@@ -372,10 +374,16 @@ impl SidebarController {
 impl AppController {
     pub(crate) fn sidebar_bind(&mut self) {
         self.sidebar.purpose = purpose::PurposeController::load(self.codex_home.as_deref());
+        self.sidebar.activity = activity::ActivityController::load(self.codex_home.as_deref());
         let state = self.window.global::<SidebarState>();
         state.set_rows(ModelRc::from(self.sidebar.rows.clone()));
         state.on_width_changed(|width| {
             crate::ui_thread::with_app(move |app| app.purpose_width_changed(width))
+        });
+        state.on_fit_title(|text, available, measured| {
+            let maximum = ((text.len() as f32 * available / measured.max(1.0)).floor() as usize)
+                .min(text.len().saturating_sub(1));
+            purpose::fit_measured_title(&text, maximum).into()
         });
         state.on_budget_changed(|| crate::ui_thread::with_app(AppController::sidebar_render));
         state.on_viewport_changed(|| {
@@ -438,6 +446,7 @@ impl AppController {
 
     pub(crate) fn sidebar_on_notification(&mut self, notification: &ServerNotification) {
         self.sidebar_search_notification(notification);
+        self.activity_notification(notification);
         self.purpose_on_notification(notification);
         match notification {
             ServerNotification::ThreadStarted(started) => {
@@ -617,6 +626,7 @@ impl AppController {
         }
         match result {
             Ok(response) => {
+                self.activity_observe(&response.data);
                 self.purpose_observe_names(&response.data);
                 let page: Vec<ThreadSummary> = response
                     .data
@@ -685,6 +695,11 @@ impl AppController {
         let has_more = self.sidebar.next_cursor.is_some();
         let mut threads = self.sidebar.threads.clone();
         merge_page(&mut threads, self.sidebar.history_hits.clone());
+        for thread in &mut threads {
+            if let Some(at) = self.sidebar.activity.at(&thread.id) {
+                thread.updated_at = at;
+            }
+        }
         let specs = build_rows(&threads, &self.sidebar.collapsed, has_more);
         let marks = self.sidebar_marks();
         let mut row_index = HashMap::new();
@@ -732,22 +747,28 @@ impl AppController {
     fn sidebar_marks(&self) -> HashMap<String, ThreadMark> {
         let active_thread = self
             .active_thread_index()
-            .and_then(|index| self.thread_tab(index))
-            .and_then(|thread| thread.thread_id.as_deref());
-        self.tabs
-            .iter()
-            .filter_map(crate::app::Tab::thread)
-            .filter_map(|thread| {
-                let id = thread.thread_id.as_deref()?;
-                Some((
+            .and_then(|i| self.thread_tab(i))
+            .and_then(|t| t.thread_id.as_deref());
+        let mut marks = self.sidebar.activity.marks();
+        for tab in &self.tabs {
+            if let Some(thread) = tab.thread()
+                && let Some(id) = thread.thread_id.as_deref()
+            {
+                let status = if matches!(thread.phase, ThreadPhase::Idle | ThreadPhase::Closed) {
+                    self.sidebar.activity.idle_status(id)
+                } else {
+                    status_for_phase(thread.phase)
+                };
+                marks.insert(
                     id.to_string(),
                     ThreadMark {
-                        status: status_for_phase(thread.phase),
+                        status,
                         selected: active_thread == Some(id),
                     },
-                ))
-            })
-            .collect()
+                );
+            }
+        }
+        marks
     }
 
     fn sidebar_remove_thread(&mut self, thread_id: &str) {
@@ -953,7 +974,7 @@ fn list_params(
     ThreadListParams {
         cursor,
         limit: Some(limit),
-        sort_key: Some(ThreadSortKey::UpdatedAt),
+        sort_key: Some(ThreadSortKey::RecencyAt),
         sort_direction: Some(SortDirection::Desc),
         model_providers: Some(Vec::new()),
         source_kinds: Some(vec![
@@ -1237,7 +1258,7 @@ mod tests {
             /*state_db_only*/ true,
         );
         assert_eq!(params.model_providers, Some(Vec::new()));
-        assert_eq!(params.sort_key, Some(ThreadSortKey::UpdatedAt));
+        assert_eq!(params.sort_key, Some(ThreadSortKey::RecencyAt));
         assert_eq!(params.archived, Some(false));
         assert_eq!(params.search_term.as_deref(), Some("auth"));
         assert!(params.use_state_db_only);

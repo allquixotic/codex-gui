@@ -73,10 +73,11 @@ the app was started from, or appear in a message box when there is none.
   Drag across user or assistant text, or click then hold Shift and use arrows
   to select. Ctrl+C (Cmd+C on macOS) or right-click **Copy** copies the selected
   text. Markdown and links retain their formatting and actions.
-- **Composer.** `Enter` sends and `Shift+Enter` adds a line (configurable).
+- **Composer.** `Enter` sends when idle and queues until the whole current turn
+  finishes while busy. `Shift+Enter` steers as soon as possible; `Alt+Enter` adds
+  a line. Queue and Steer have separate buttons during a turn.
   Type `@` to mention a file, `/` for commands, `$` for skills. Paste or
-  attach images. While the agent works, typing steers the running turn (or
-  queues the message, see Settings › Appearance); `Esc` interrupts. The
+  attach images. `Esc` interrupts. The
   toolbar picks the model, reasoning effort, permissions, and Plan mode.
 - **Approvals.** When the agent needs permission to run a command, edit files,
   or answer a question, a card appears above the composer. Keys: `Y` accept,
@@ -249,3 +250,19 @@ For questions asked while Codex keeps working, typing overrides the selected opt
 answers follow your normal send/steer/queue preference. **Dismiss** closes those
 questions locally. Unanswered fields stay available after a partial submission and
 after Codex finishes the requesting turn.
+
+### Thread activity and hover summaries
+
+Opening a conversation marks it read without changing its activity age. A blue
+filled dot means unread activity (or work in progress); an empty circle means a
+visited, read, idle conversation. Unvisited idle conversations have no dot.
+Amber indicates a question or approval waiting for you, and red indicates an
+error. Read state survives restarting the GUI.
+
+Long hover summaries wrap over the conversation pane and never cover the thread
+list. Generated short titles use readable words and fit the current sidebar
+width. Drag its divider to resize it; after ten seconds without further changes,
+visible generated titles are resized using their cached summaries. Manually
+renamed titles stay protected.
+
+Pending messages show a pencil below their bubble. Use it to edit multiline text or delete the pending message. Attachments and Queue/Steer intent are retained. Once consumed, the message cannot be recalled; an edit racing consumption remains in the editor with an explanation.

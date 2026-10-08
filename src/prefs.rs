@@ -35,7 +35,7 @@ pub(crate) enum ThemeChoice {
     Dark,
 }
 
-/// What typing + Enter does while a turn is running.
+/// Default handling for tool-originated cross-tab input while a turn runs.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum BusyInput {
@@ -51,7 +51,7 @@ pub(crate) enum BusyInput {
 pub(crate) struct Prefs {
     pub(crate) renderer: RendererChoice,
     pub(crate) theme: ThemeChoice,
-    /// Enter sends, Shift+Enter inserts a newline. When false, Ctrl/Cmd+Enter sends.
+    /// Legacy preference retained for config compatibility; explicit composer shortcuts win.
     pub(crate) enter_sends: bool,
     pub(crate) busy_input: BusyInput,
     pub(crate) font_size: f32,

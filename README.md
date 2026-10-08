@@ -28,10 +28,11 @@ explains everyday use; [AGENTS.md](AGENTS.md) describes maintenance.
 
 ## Stable upstream dependency
 
-Codex GUI 0.3.1 embeds **Codex 0.161.0**, stable tag `rust-v0.161.0`, pinned to
-`979011409de0a60b52f179721948e65531d26144`. `upstream.json`, the Cargo Git dependencies
-and `Cargo.lock` record the exact backend. One minimal Bedrock tier backport
-across the provider and request builder restores Bedrock Astra Ultrafast and preserves custom catalogs’ tiers; see
+Codex GUI 0.4.0 embeds **Codex 0.162.0**, stable tag `rust-v0.162.0`, pinned to
+`c1382380de69521303b416720a52f42d51af6248`. `upstream.json`, the Cargo Git dependencies
+and `Cargo.lock` record the exact backend. One minimal provider-catalog backport
+advertises GPT-6.1 Sol Ultrafast on Bedrock; Astra and tier-aware requests are upstream.
+Two small core/app-server patches support editing unconsumed steering input; see
 [patches/README.md](patches/README.md). Generated patched sources are ignored.
 The GUI owns its process bootstrap and uses public upstream APIs. It does not build
 Codex's CLI, TUI or exec frontend.
@@ -182,3 +183,5 @@ builds/signing run only for explicitly requested releases; never launch Mac GUI 
 uploads to an existing GitHub release, verifies SHA-256 asset digests, then cleans
 local Cargo outputs and the published packages. See GUI.md §7 for memory and
 interaction priorities and when to investigate performance.
+
+Pending-message editing uses a small, documented core/app-server patch for steering input not yet consumed by the model; queued messages use the existing upstream API. See [patch inventory](patches/README.md).

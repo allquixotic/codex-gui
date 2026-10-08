@@ -9,6 +9,7 @@
 //! looked up with `thread/turns/list`; a stop requested while `turn/start`
 //! is still in flight is sent as soon as the turn's id arrives.
 
+mod pending;
 mod picker;
 pub(crate) mod recap;
 mod review;
@@ -84,6 +85,7 @@ const INTERRUPT_RETRY_DELAY: Duration = Duration::from_millis(150);
 pub(crate) struct ThreadExtras {
     /// Set when the tab is a side chat: the thread it branched from.
     pub(crate) side_parent: Option<SideParent>,
+    pub(crate) editing_pending: Option<pending::EditingPending>,
     /// Recap being generated for this tab.
     pub(crate) recap: Option<recap::RecapRun>,
     /// A managed worktree is being created from this tab.
@@ -124,6 +126,7 @@ fn side_chat_restriction(action: &str) -> Option<&'static str> {
 pub(crate) struct PendingInput {
     pub(crate) input: Vec<UserInput>,
     pub(crate) client_id: String,
+    pub(crate) mode: BusyInput,
 }
 
 /// One-line preview of user input (first text item).
@@ -229,7 +232,7 @@ impl AppController {
         };
         let pending = std::mem::take(&mut thread.pending_inputs);
         for pending in pending {
-            self.dispatch_input(index, pending.input, pending.client_id);
+            self.dispatch_input(index, pending.input, pending.client_id, pending.mode);
         }
     }
 
@@ -350,6 +353,9 @@ impl AppController {
         if thread.phase == ThreadPhase::Running {
             // No `turn/started` is sent for a turn that was already running.
             self.lookup_running_turn(index);
+        }
+        if self.active == Some(index) {
+            self.activity_read_active();
         }
         self.transcript_load_history(
             index,
@@ -628,6 +634,15 @@ impl AppController {
     /// the input waits in the tab. Returns false (and says why) when the tab
     /// has no thread that could ever take the input.
     pub(crate) fn send_user_input(&mut self, index: usize, input: Vec<UserInput>) -> bool {
+        self.send_user_input_mode(index, input, self.prefs.busy_input)
+    }
+
+    pub(crate) fn send_user_input_mode(
+        &mut self,
+        index: usize,
+        input: Vec<UserInput>,
+        mode: BusyInput,
+    ) -> bool {
         if input.is_empty() {
             return false;
         }
@@ -650,19 +665,26 @@ impl AppController {
         // Until the thread is attached (started, resumed, forked, or a side
         // chat got its boundary) input waits in the tab.
         if thread.thread_id.is_none() || thread.phase == ThreadPhase::Starting {
-            thread
-                .pending_inputs
-                .push(PendingInput { input, client_id });
+            thread.pending_inputs.push(PendingInput {
+                input,
+                client_id,
+                mode,
+            });
             self.refresh_tabs();
             return true;
         }
-        self.dispatch_input(index, input, client_id);
+        self.dispatch_input(index, input, client_id, mode);
         self.refresh_tabs();
         true
     }
 
-    fn dispatch_input(&mut self, index: usize, input: Vec<UserInput>, client_id: String) {
-        let busy_mode = self.prefs.busy_input;
+    fn dispatch_input(
+        &mut self,
+        index: usize,
+        input: Vec<UserInput>,
+        client_id: String,
+        busy_mode: BusyInput,
+    ) {
         let Some(thread) = self.thread_tab_mut(index) else {
             return;
         };
@@ -1489,6 +1511,7 @@ mod tests {
 
     fn turn(id: &str, status: TurnStatus) -> Turn {
         Turn {
+            root_turn_id: None,
             id: id.to_string(),
             items: Vec::new(),
             items_view: Default::default(),

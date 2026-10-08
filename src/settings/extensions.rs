@@ -159,7 +159,7 @@ fn skill_rows(entries: &[SkillsListEntry], meta: &PageMeta, ready: bool) -> Vec<
             skill_scope_title(scope),
         ));
         for skill in skills {
-            let id = skill.path.as_path().to_string_lossy().into_owned();
+            let id = skill.path.as_str().to_owned();
             let title = skill
                 .interface
                 .as_ref()
@@ -177,7 +177,7 @@ fn skill_rows(entries: &[SkillsListEntry], meta: &PageMeta, ready: bool) -> Vec<
                 .unwrap_or_else(|| skill.description.clone());
             rows.push(ListItem {
                 title,
-                subtitle: super::short_path(skill.path.as_path()),
+                subtitle: super::short_path(std::path::Path::new(skill.path.as_str())),
                 description: crate::app::truncate_chars(&description, 280),
                 tag: skill
                     .plugin_id

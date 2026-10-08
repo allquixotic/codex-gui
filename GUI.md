@@ -1369,3 +1369,46 @@ Final SHA-256:
 e582f2d909d635cb6cf900ca00092adc56e3b8b37502dffa79103b1c9207d34a  codex-gui-0.3.1-windows-x64.zip
 73b8aba2ace06a39c5b44093d7abc1843b4ddab49447c5dfdc4f4ebf097cd891  codex-gui-0.3.1-macos-universal.dmg
 ```
+
+
+## 26. Version 0.4.0 conversation controls and sidebar
+
+Target stable Codex 0.162.0. Its Astra Ultrafast support replaces the old two
+patches. For Bedrock, carry only upstream #51794's provider-catalog change for GPT-6.1 Sol
+Ultrafast until a stable release includes it. Preserve every existing feature
+and the signed, attested Windows ZIP / universal Mac DMG release process.
+
+The composer presents separate Steer and Queue buttons during a running turn.
+Enter queues until the entire current turn finishes; Shift+Enter steers as soon
+as possible. Alt+Enter inserts a line. Idle sends begin a new turn. Intent follows
+each submission through startup and remote image preparation. Tool-originated
+cross-tab input retains its separate configurable default.
+
+All sidebar hover tips render in one wrapped overlay entirely inside the
+conversation pane, including at screen edges and in narrow/drawer layouts.
+They cannot cover sidebar rows. Large tips scroll within available height.
+Short AI titles use spaced natural words, a representative current-font width
+budget and final rendered-width fitting. Long summaries directly describe the
+work in one or two plain-text sentences, without requester narration. Existing
+completed-user-only, ephemeral, fallback, persistent cache, manual-name and
+10-second resize rules continue to apply.
+
+Viewing, resuming and reading do not change activity dates. Real user, assistant
+and tool work do. Persist read state independently from meaningful activity:
+filled blue indicates unread output (or a running turn), an empty circle means
+visited/read and idle, no circle means unvisited/idle, amber means input needed,
+and red means failure. Selecting a thread clears unread state without changing
+its date. Read-only last-turn metadata reconciles activity without inference.
+
+Validation and publication evidence are recorded here when complete. All GUI
+tests run on Windows; this Mac remains headless.
+
+### Pending-message editing (0.4.0)
+
+Unsent message bubbles offer a pencil action with a multiline editor, Save,
+Delete and Cancel. Local messages waiting for a thread to start retain their
+Queue/Steer intent. Server-queued messages use atomic update/delete requests;
+steering input not yet consumed uses the documented core/app-server patch.
+attachments remain attached when text changes. A message already consumed
+cannot be recalled or rewritten. If consumption wins a race with an edit, retain
+the edited text and explain that it was not applied.

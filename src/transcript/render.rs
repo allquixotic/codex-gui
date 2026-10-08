@@ -221,10 +221,16 @@ fn render_hook(hook: &HookEntry) -> Block {
 fn render_item(entry: &ItemEntry, ctx: RenderContext<'_>) -> Vec<Block> {
     let expanded = |toggle: usize| entry.expanded.contains(&toggle);
     match &entry.item {
-        ThreadItem::UserMessage { content, .. } => match user_cross_tab_message(content) {
-            Some(message) => crosstab_blocks(&message, delivery_status(entry), ctx),
-            None => vec![user_block(content, delivery_status(entry))],
-        },
+        ThreadItem::UserMessage { content, .. } => {
+            let mut blocks = match user_cross_tab_message(content) {
+                Some(message) => crosstab_blocks(&message, delivery_status(entry), ctx),
+                None => vec![user_block(content, delivery_status(entry))],
+            };
+            if let Some(last) = blocks.last_mut() {
+                last.pending = entry.local_echo && !entry.unsent;
+            }
+            blocks
+        }
         ThreadItem::AgentMessage { text, .. }
             if !matches!(entry.live, Live::Markdown(_))
                 && let Some(message) = crosstab::parse(text) =>

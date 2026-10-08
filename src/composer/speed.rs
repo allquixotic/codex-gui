@@ -206,11 +206,16 @@ mod native_catalog_tests {
         for (info, slugs) in [
             (
                 ModelProviderInfo::create_amazon_bedrock_provider(None),
-                vec!["openai.gpt-6-astra"],
+                vec!["openai.gpt-6-astra", "openai.gpt-6.1-sol"],
             ),
             (
                 ModelProviderInfo::create_amazon_bedrock_runtime_provider(None),
-                vec!["us.openai.gpt-6-astra", "global.openai.gpt-6-astra"],
+                vec![
+                    "us.openai.gpt-6-astra",
+                    "global.openai.gpt-6-astra",
+                    "us.openai.gpt-6.1-sol",
+                    "global.openai.gpt-6.1-sol",
+                ],
             ),
         ] {
             let provider = create_model_provider(info, None);
@@ -240,10 +245,8 @@ mod native_catalog_tests {
         let mut sol = manager
             .get_model_info("openai.gpt-6.1-sol", &ModelsManagerConfig::default())
             .await;
-        assert!(
-            sol.service_tiers.is_empty(),
-            "Do not guess unreleased Sol tiers"
-        );
+        assert_eq!(sol.service_tiers.len(), 1, "Native Sol Ultrafast backport");
+        sol.service_tiers.clear();
         sol.service_tiers.push(ModelServiceTier {
             id: "ultrafast".into(),
             name: "Ultrafast".into(),

@@ -40,6 +40,7 @@ use std::path::PathBuf;
 
 use codex_app_server_protocol::ServerNotification;
 use codex_app_server_protocol::ThreadHistoryMode;
+use codex_app_server_protocol::ThreadItem;
 use codex_app_server_protocol::ThreadStatus;
 use codex_app_server_protocol::Turn;
 use codex_app_server_protocol::UserInput;
@@ -630,6 +631,33 @@ impl AppController {
         });
     }
 
+    pub(crate) fn transcript_pending_input(
+        &self,
+        index: usize,
+        client_id: &str,
+    ) -> Option<Vec<UserInput>> {
+        let thread = self.thread_tab(index)?;
+        let entry = thread.transcript.entry(client_id)?.item()?;
+        if !entry.local_echo || entry.unsent {
+            return None;
+        }
+        match &entry.item {
+            ThreadItem::UserMessage { content, .. } => Some(content.clone()),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn transcript_update_echo(
+        &mut self,
+        index: usize,
+        client_id: &str,
+        input: Vec<UserInput>,
+    ) {
+        self.with_transcript(index, |transcript, ctx, _| {
+            transcript.update_echo(client_id, input, ctx);
+        });
+    }
+
     /// The queued message sent as `client_id` was removed from the queue.
     pub(crate) fn transcript_remove_echo(&mut self, index: usize, client_id: &str) {
         self.with_transcript(index, |transcript, _, _| {
@@ -1095,6 +1123,10 @@ impl AppController {
         let code = store::split_row_id(row_id)
             .and_then(|(_, local)| export::code_block_text(&entry.blocks, local));
         match action {
+            "edit-pending" => {
+                let client_id = entry.key.clone();
+                self.pending_message_open(index, client_id);
+            }
             "copy" => {
                 let text = code.unwrap_or_else(|| export::block_copy_text(block));
                 self.copy_to_clipboard(&text);

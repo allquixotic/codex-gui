@@ -1080,6 +1080,26 @@ impl Transcript {
         true
     }
 
+    pub(crate) fn update_echo(
+        &mut self,
+        client_id: &str,
+        input: Vec<UserInput>,
+        ctx: RenderContext<'_>,
+    ) -> bool {
+        let Some(index) = self.local_echo_index(client_id) else {
+            return false;
+        };
+        if let Some(item) = self.entries[index].item_mut() {
+            item.item = ThreadItem::UserMessage {
+                id: client_id.to_string(),
+                client_id: Some(client_id.to_string()),
+                content: input,
+            };
+        }
+        self.rerender(index, ctx);
+        true
+    }
+
     /// Removes the local echo `client_id` (its queued message was deleted).
     pub(crate) fn remove_echo(&mut self, client_id: &str) -> bool {
         let Some(index) = self.local_echo_index(client_id) else {
@@ -1956,6 +1976,7 @@ mod tests {
 
     fn turn(status: TurnStatus, error: Option<&str>) -> Turn {
         Turn {
+            root_turn_id: None,
             id: "turn-1".to_string(),
             items: Vec::new(),
             items_view: TurnItemsView::NotLoaded,
@@ -2500,6 +2521,23 @@ mod tests {
         assert!(transcript.trim_front(1, usize::MAX).is_some());
         assert_eq!(notice_keys(&transcript), vec!["a"]);
         assert_eq!(transcript.stashed.len(), 1);
+    }
+
+    #[test]
+    fn pending_edit_updates_echo_and_cannot_rewrite_confirmed_history() {
+        let mut transcript = Transcript::new();
+        transcript.push_local_user_message("c1", &[crate::session::text_input("before")], ctx());
+        assert!(transcript.entry("c1").unwrap().blocks[0].pending);
+        assert!(transcript.update_echo("c1", vec![crate::session::text_input("after")], ctx()));
+        assert_eq!(transcript.entry("c1").unwrap().blocks[0].text, "after");
+        apply(
+            &mut transcript,
+            completed(user("server1", Some("c1"), "after")),
+        );
+        assert!(!transcript.entry("server1").unwrap().blocks[0].pending);
+        assert!(!transcript.update_echo("c1", vec![crate::session::text_input("too late")], ctx()));
+        assert!(!transcript.remove_echo("server1"));
+        assert_eq!(transcript.entry("server1").unwrap().blocks[0].text, "after");
     }
 
     #[test]

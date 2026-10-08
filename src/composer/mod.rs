@@ -73,6 +73,7 @@ pub(crate) struct PreparingMessage {
     /// Restored into the composer when preparing fails.
     text: String,
     attachments: Vec<Attachment>,
+    mode: BusyInput,
 }
 
 /// Per-tab composer state.
@@ -154,6 +155,9 @@ impl AppController {
         state.set_permissions(ModelRc::from(shared.permissions_model.clone()));
 
         state.on_send(|| crate::ui_thread::with_app(AppController::composer_submit));
+        state.on_steer(|| {
+            crate::ui_thread::with_app(|app| app.composer_submit_mode(BusyInput::Steer))
+        });
         state.on_interrupt(|| {
             crate::ui_thread::with_app(|app| {
                 if let Some(index) = app.active_thread_index() {
@@ -193,7 +197,8 @@ impl AppController {
         state.on_toggle_plan(|| crate::ui_thread::with_app(AppController::composer_toggle_plan));
         state.on_enter_action(|enter_sends, shift, command, meta, alt| {
             match text::enter_action(enter_sends, shift, command, meta, alt) {
-                EnterAction::Send => 1,
+                EnterAction::Queue => 1,
+                EnterAction::Steer => 2,
                 EnterAction::Newline => 0,
             }
         });
@@ -358,6 +363,10 @@ impl AppController {
 
     /// Sends the composer content (or runs a `/command`).
     fn composer_submit(&mut self) {
+        self.composer_submit_mode(BusyInput::Queue);
+    }
+
+    fn composer_submit_mode(&mut self, mode: BusyInput) {
         let Some(index) = self.active_thread_index() else {
             return;
         };
@@ -374,13 +383,17 @@ impl AppController {
             self.composer_run_shell(index, command, message);
             return;
         }
-        self.composer_send_message(index, &message);
+        self.composer_send_message_mode(index, &message, mode);
     }
 
     /// Sends `message` with the draft's attachments to tab `index` and
     /// clears the composer. Returns false (the draft stays) when nothing was
     /// sent.
     fn composer_send_message(&mut self, index: usize, message: &str) -> bool {
+        self.composer_send_message_mode(index, message, BusyInput::Queue)
+    }
+
+    fn composer_send_message_mode(&mut self, index: usize, message: &str, mode: BusyInput) -> bool {
         let Some(thread) = self.thread_tab(index) else {
             return false;
         };
@@ -424,11 +437,12 @@ impl AppController {
             .map(|thread| std::mem::take(&mut thread.composer.attachments))
             .unwrap_or_default();
         if !images.is_empty() && self.backend.uses_remote_workspace() {
-            self.composer_send_inline_images(index, input, message.to_string(), attachments);
-        } else if !self.send_user_input(index, input) {
+            self.composer_send_inline_images(index, input, message.to_string(), attachments, mode);
+        } else if !self.send_user_input_mode(index, input, mode) {
             let draft = PreparingMessage {
                 text: message.to_string(),
                 attachments,
+                mode,
             };
             self.composer_restore_draft(index, draft);
             self.composer_refresh();
@@ -447,10 +461,15 @@ impl AppController {
         input: Vec<UserInput>,
         text: String,
         attachments: Vec<Attachment>,
+        mode: BusyInput,
     ) {
         let tab_id = self.tabs[index].id;
         if let Some(thread) = self.thread_tab_mut(index) {
-            thread.composer.preparing = Some(PreparingMessage { text, attachments });
+            thread.composer.preparing = Some(PreparingMessage {
+                text,
+                attachments,
+                mode,
+            });
         }
         self.backend.spawn(async move {
             let prepared = tokio::task::spawn_blocking(move || {
@@ -478,7 +497,7 @@ impl AppController {
         };
         match prepared {
             Ok(input) => {
-                if !self.send_user_input(index, input) {
+                if !self.send_user_input_mode(index, input, preparing.mode) {
                     self.composer_restore_draft(index, preparing);
                 }
             }
@@ -702,7 +721,6 @@ impl AppController {
     pub(crate) fn composer_refresh(&mut self) {
         let state = self.window.global::<ComposerState>();
         let enter_sends = self.prefs.enter_sends;
-        let busy_input = self.prefs.busy_input;
         state.set_enter_sends(enter_sends);
         let thread = self
             .active_thread_index()
@@ -717,15 +735,8 @@ impl AppController {
         let busy = thread.is_busy();
         state.set_enabled(enabled);
         state.set_busy(busy);
-        state.set_placeholder(placeholder(thread.phase, busy_input, enter_sends).into());
-        state.set_send_label(
-            match (busy, busy_input) {
-                (true, BusyInput::Steer) => "Steer",
-                (true, BusyInput::Queue) => "Queue",
-                (false, _) => "Send",
-            }
-            .into(),
-        );
+        state.set_placeholder(placeholder(thread.phase).into());
+        state.set_send_label(if busy { "Queue" } else { "Send" }.into());
 
         let models = &self.composer_shared.models;
         let model = toolbar::effective_model(thread);
@@ -924,6 +935,7 @@ impl AppController {
             "open" => self.composer_open_picker(arg(1)),
             "plan" => self.composer_toggle_plan(),
             "send" => self.composer_submit(),
+            "steer" => self.composer_submit_mode(BusyInput::Steer),
             "drop" => {
                 let paths = args.iter().skip(1).map(PathBuf::from).collect();
                 self.composer_drop_paths(paths);
@@ -935,28 +947,17 @@ impl AppController {
 }
 
 /// Placeholder text for the input.
-fn placeholder(phase: ThreadPhase, busy_input: BusyInput, enter_sends: bool) -> String {
+fn placeholder(phase: ThreadPhase) -> String {
     match phase {
-        ThreadPhase::Closed => "This thread is closed.".to_string(),
-        ThreadPhase::Error => "This thread is unavailable.".to_string(),
-        ThreadPhase::Starting => "Starting… you can start typing.".to_string(),
-        ThreadPhase::Running | ThreadPhase::WaitingOnUser => match busy_input {
-            BusyInput::Steer => "Working… type to steer, Esc to stop".to_string(),
-            BusyInput::Queue => "Working… type to queue a message, Esc to stop".to_string(),
-        },
-        ThreadPhase::Idle => {
-            if enter_sends {
-                "Ask Codex anything. @ to mention files, / for commands".to_string()
-            } else {
-                let send = if cfg!(target_os = "macos") {
-                    "⌘↩"
-                } else {
-                    "Ctrl+Enter"
-                };
-                format!("Ask Codex anything. @ files, / commands, {send} to send")
-            }
+        ThreadPhase::Closed => "This thread is closed.",
+        ThreadPhase::Error => "This thread is unavailable.",
+        ThreadPhase::Starting => "Starting… you can start typing.",
+        ThreadPhase::Running | ThreadPhase::WaitingOnUser => {
+            "Enter to queue · Shift+Enter to steer · Alt+Enter for a new line"
         }
+        ThreadPhase::Idle => "Ask Codex anything. Enter to send · Alt+Enter for a new line",
     }
+    .to_string()
 }
 
 fn chip(attachment: &Attachment) -> ComposerChip {
@@ -1004,17 +1005,14 @@ mod tests {
     #[test]
     fn placeholder_reflects_state() {
         assert_eq!(
-            placeholder(ThreadPhase::Running, BusyInput::Steer, true),
-            "Working… type to steer, Esc to stop"
+            placeholder(ThreadPhase::Running),
+            "Enter to queue · Shift+Enter to steer · Alt+Enter for a new line"
         );
         assert_eq!(
-            placeholder(ThreadPhase::WaitingOnUser, BusyInput::Queue, true),
-            "Working… type to queue a message, Esc to stop"
+            placeholder(ThreadPhase::WaitingOnUser),
+            "Enter to queue · Shift+Enter to steer · Alt+Enter for a new line"
         );
-        assert_eq!(
-            placeholder(ThreadPhase::Closed, BusyInput::Steer, true),
-            "This thread is closed."
-        );
-        assert!(placeholder(ThreadPhase::Idle, BusyInput::Steer, false).contains("to send"));
+        assert_eq!(placeholder(ThreadPhase::Closed), "This thread is closed.");
+        assert!(placeholder(ThreadPhase::Idle).contains("to send"));
     }
 }

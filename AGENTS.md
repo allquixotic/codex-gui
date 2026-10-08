@@ -15,12 +15,15 @@ all working features; `SPEC.md` records focused invariants and regressions.
   Cargo transport patches, toolchain, V8 digests, lockfile, and license notices.
   CI's toolchain input must also match `rust-toolchain.toml` after an update.
 - Prefer public upstream APIs and GUI-side adapters. The Bedrock backport has
-  two small patches: provider catalogs and the core request builder. `patches/`
+  one small provider-catalog patch for Sol Ultrafast. Two small core/app-server
+  patches allow atomic edits to unconsumed steering input. `patches/`
   is the inventory; `.patched/` is ignored generated source. Before Cargo commands,
   run `python scripts/upstream.py prepare`. For each patch document its stable base,
   reason, application/verification process and removal condition, keep it minimal,
   and update pin validation consistently. Remove the backport when a stable release
-  provides it and V5 native provider tests pass. Helpers stay pristine. Never restore a fork.
+  provides it and V5 native provider tests pass. Remove the pending-steer
+  patches when upstream supports atomic edits before consumption. Helpers
+  use pristine entrypoints. Never restore a fork.
 - `.upstream/` is ignored, pristine stable source for runtime helpers and
   materializing the backport. Do not add product code there or commit its contents.
 - The Slint vendor directory carries a wrapped-link fix and narrow rich-text
@@ -44,6 +47,12 @@ all working features; `SPEC.md` records focused invariants and regressions.
   only for an explicitly requested release; never run Mac GUI tests.
 - Keep UI-thread callbacks free of blocking I/O; use the existing backend pump
   and typed requests. Keep transcript virtualization and memory limits.
+- Composer Enter queues, Shift+Enter steers, Alt+Enter inserts a newline.
+  Preserve per-message intent through delayed input and startup. Sidebar tooltip
+  bounds belong entirely to the conversation pane. Viewing never advances
+  activity; preserve the independent GUI read/activity cache. Pending message
+  edits must preserve attachments and delivery intent, use atomic queue APIs,
+  and retain drafts when consumption wins the race. Never rewrite consumed history.
 - Purpose summaries consume completed user requests only; use the existing fast
   model selector with normal-model fallback. Never persist their temporary
   conversations, overwrite manual names, or summarize assistant/tool output.

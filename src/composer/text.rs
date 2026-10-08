@@ -13,37 +13,27 @@ pub(crate) struct Token {
     pub(crate) query: String,
 }
 
-/// What Enter does in the composer.
+/// Explicit composer actions, independent of legacy input preferences.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum EnterAction {
-    /// Submit the message.
-    Send,
-    /// Let the text input insert a line break.
+    Queue,
+    Steer,
     Newline,
 }
 
-/// Decides what Enter does given the user's preference and the modifiers.
-///
-/// `command` is Slint's `control` modifier, which is Cmd on macOS and Ctrl
-/// elsewhere; `meta` is the physical Ctrl key on macOS. With `enter_sends`,
-/// Shift or Alt inserts a newline. Without it, Ctrl/Cmd+Enter sends.
 pub(crate) fn enter_action(
-    enter_sends: bool,
+    _enter_sends: bool,
     shift: bool,
-    command: bool,
-    meta: bool,
+    _command: bool,
+    _meta: bool,
     alt: bool,
 ) -> EnterAction {
-    if enter_sends {
-        if (shift || alt) && !command && !meta {
-            EnterAction::Newline
-        } else {
-            EnterAction::Send
-        }
-    } else if command || meta {
-        EnterAction::Send
-    } else {
+    if alt {
         EnterAction::Newline
+    } else if shift {
+        EnterAction::Steer
+    } else {
+        EnterAction::Queue
     }
 }
 
@@ -280,47 +270,25 @@ mod tests {
     }
 
     #[test]
-    fn enter_sends_by_default_and_shift_adds_a_line() {
-        assert_eq!(
-            enter_action(true, false, false, false, false),
-            EnterAction::Send
-        );
-        assert_eq!(
-            enter_action(true, true, false, false, false),
-            EnterAction::Newline
-        );
-        assert_eq!(
-            enter_action(true, false, false, false, true),
-            EnterAction::Newline
-        );
-        assert_eq!(
-            enter_action(true, false, true, false, false),
-            EnterAction::Send
-        );
-        assert_eq!(
-            enter_action(true, true, true, false, false),
-            EnterAction::Send
-        );
-    }
-
-    #[test]
-    fn ctrl_enter_sends_when_enter_inserts_lines() {
-        assert_eq!(
-            enter_action(false, false, false, false, false),
-            EnterAction::Newline
-        );
-        assert_eq!(
-            enter_action(false, true, false, false, false),
-            EnterAction::Newline
-        );
-        assert_eq!(
-            enter_action(false, false, true, false, false),
-            EnterAction::Send
-        );
-        assert_eq!(
-            enter_action(false, false, false, true, false),
-            EnterAction::Send
-        );
+    fn v11_enter_queues_shift_steers_and_alt_inserts_newline() {
+        for legacy in [true, false] {
+            assert_eq!(
+                enter_action(legacy, false, false, false, false),
+                EnterAction::Queue
+            );
+            assert_eq!(
+                enter_action(legacy, true, false, false, false),
+                EnterAction::Steer
+            );
+            assert_eq!(
+                enter_action(legacy, false, false, false, true),
+                EnterAction::Newline
+            );
+            assert_eq!(
+                enter_action(legacy, true, false, false, true),
+                EnterAction::Newline
+            );
+        }
     }
 
     #[test]

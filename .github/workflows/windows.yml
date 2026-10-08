@@ -90,6 +90,15 @@ jobs:
           python dev/windows-native-menu-driver-check.py
           if ($LASTEXITCODE -ne 0) { throw 'Native menu automation probe failed' }
           python dev/windows-purpose-selection-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
+      - name: Windows conversation controls, tooltip and read-state regression
+        run: python dev/windows-conversation-smoke.py target/x86_64-pc-windows-msvc/release/codex-gui.exe
+      - name: Upload conversation evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: windows-conversation-evidence
+          path: dist/conversation-smoke/
+          if-no-files-found: ignore
       - name: Upload purpose and selection evidence
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f

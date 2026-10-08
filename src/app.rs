@@ -530,6 +530,13 @@ impl AppController {
     /// The OS window gained or lost focus.
     pub(crate) fn on_window_focus_changed(&mut self, focused: bool) {
         self.window_focused = focused;
+        if focused {
+            self.activity_read_active();
+            if let Some(index) = self.active_thread_index() {
+                self.tabs[index].unread = false;
+            }
+            self.refresh_tabs();
+        }
         if focused && self.prefs.theme == ThemeChoice::System && self.palette_pinned {
             // Some platforms report scheme changes only through the window;
             // catch up when the user comes back.
@@ -980,6 +987,7 @@ impl AppController {
         }
         self.active = Some(index);
         self.tabs[index].unread = false;
+        self.activity_read_active();
         self.show_active();
         self.refresh_tabs();
         self.transcript_trim_background();

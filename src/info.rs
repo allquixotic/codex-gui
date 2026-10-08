@@ -1226,13 +1226,17 @@ impl AppController {
                     move |app, result: Result<ThreadQueueDeleteResponse, BackendError>| {
                         match result {
                             // The message will never be sent: drop its bubble.
-                            Ok(_) => {
+                            Ok(response) if response.deleted => {
                                 if let Some(index) = app.tab_index_by_id(tab_id) {
                                     app.transcript_remove_echo(
                                         index,
                                         &removed.client_user_message_id,
                                     );
                                 }
+                            }
+                            Ok(_) => {
+                                app.toast("The message has already been dispatched");
+                                app.info_refetch_queue(tab_id);
                             }
                             Err(err) => {
                                 app.toast(format!("Could not remove: {}", err.user_message()));
@@ -2487,6 +2491,8 @@ deleted file mode 100644
         assert_eq!(agents[0].label(), "Agent child");
 
         let activity = ThreadItem::SubAgentActivity {
+            model: None,
+            reasoning_effort: None,
             id: "act".to_string(),
             kind: SubAgentActivityKind::Completed,
             agent_thread_id: "child".to_string(),

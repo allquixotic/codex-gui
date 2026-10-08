@@ -318,7 +318,7 @@ impl AppController {
                                 .or(skill.short_description)
                                 .unwrap_or(skill.description),
                             name: skill.name,
-                            path: skill.path.into(),
+                            path: PathBuf::from(skill.path.as_str()),
                         })
                         .collect(),
                     Err(err) => {

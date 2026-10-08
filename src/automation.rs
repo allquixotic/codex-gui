@@ -94,6 +94,8 @@ pub(crate) enum Step {
     /// `["accept", row]`, `["choose", picker, id]`, `["open", picker]`,
     /// `["plan"]`, `["send"]`.
     Composer(Vec<String>),
+    /// Pending editor controls and real pencil pointer click, Windows smoke tests.
+    Pending(Vec<String>),
     /// Drive the Providers page: `["method", "2"]`, `["set", "api-key", "x"]`,
     /// `["apply"]`, ... (see `bedrock_automation`).
     Bedrock(Vec<String>),
@@ -210,6 +212,43 @@ impl AppController {
                     }
                     return;
                 }
+                Step::Pending(args) => {
+                    use crate::ui::PendingMessageState;
+                    let state = self.window.global::<PendingMessageState>();
+                    match args.first().map(String::as_str) {
+                        Some("click") => {
+                            if let Some((x, y)) = self.rendered_text_center("✎") {
+                                self.automation_dispatch(vec![
+                                    slint::platform::WindowEvent::PointerMoved {
+                                        position: slint::LogicalPosition::new(x, y),
+                                    },
+                                    slint::platform::WindowEvent::PointerPressed {
+                                        position: slint::LogicalPosition::new(x, y),
+                                        button: slint::platform::PointerEventButton::Left,
+                                    },
+                                    slint::platform::WindowEvent::PointerReleased {
+                                        position: slint::LogicalPosition::new(x, y),
+                                        button: slint::platform::PointerEventButton::Left,
+                                    },
+                                ]);
+                            } else {
+                                eprintln!("pending pencil target not found");
+                            }
+                        }
+                        Some("text") => {
+                            state.set_text(args.get(1).cloned().unwrap_or_default().into())
+                        }
+                        Some("save" | "delete" | "cancel") => {
+                            state.invoke_action(args[0].as_str().into())
+                        }
+                        Some("dump") => {
+                            if let Some(path) = args.get(1) {
+                                let _ = std::fs::write(path, serde_json::json!({"open":state.get_open(),"text":state.get_text().as_str(),"error":state.get_error().as_str()}).to_string());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 Step::NewThread(folder) => self.start_thread_in_folder(folder),
                 Step::OpenFolder(folder) => self.start_thread_checked(folder),
                 Step::Folderless(true) => self.start_folderless_thread(),
@@ -231,11 +270,31 @@ impl AppController {
                                     .set_sidebar_width(width);
                             }
                         }
+                        Some("hover") => {
+                            let edge = args
+                                .get(1)
+                                .and_then(|s| s.parse::<f32>().ok())
+                                .unwrap_or(1.0);
+                            let texts = self.sidebar_rendered_text();
+                            if let Some(row) = texts
+                                .iter()
+                                .find(|row| row["thread"].as_bool() == Some(true))
+                            {
+                                let y = row["y"].as_f64().unwrap_or(0.0) as f32 + 8.0;
+                                self.automation_dispatch(vec![
+                                    slint::platform::WindowEvent::PointerMoved {
+                                        position: slint::LogicalPosition::new(edge, y),
+                                    },
+                                ]);
+                            } else {
+                                eprintln!("sidebar hover target not found");
+                            }
+                        }
                         Some("dump") => {
                             if let Some(path) = args.get(1) {
                                 use slint::Model;
-                                let rows = state.get_rows().iter().filter(|row| row.kind == crate::ui::SidebarRowKind::Thread).map(|row| serde_json::json!({"id":row.id.as_str(),"title":row.title.as_str(),"tooltip":row.tooltip.as_str(),"generated":row.generated_title})).collect::<Vec<_>>();
-                                let _ = std::fs::write(path, serde_json::json!({"rows":rows,"maximum":self.purpose_maximum_for_test(),"width":self.prefs.sidebar_width}).to_string());
+                                let rows = state.get_rows().iter().filter(|row| row.kind == crate::ui::SidebarRowKind::Thread).map(|row| serde_json::json!({"id":row.id.as_str(),"title":row.title.as_str(),"tooltip":row.tooltip.as_str(),"generated":row.generated_title,"age":row.detail.as_str(),"status":format!("{:?}",row.status)})).collect::<Vec<_>>();
+                                let _ = std::fs::write(path, serde_json::json!({"rows":rows,"maximum":self.purpose_maximum_for_test(),"width":self.prefs.sidebar_width,"tooltip_bounds":self.window.get_sidebar_tooltip_bounds().iter().collect::<Vec<_>>(),"tooltip_pane":self.window.get_sidebar_tooltip_pane().iter().collect::<Vec<_>>(),"tooltip_text":state.get_tooltip_text().as_str(),"rendered_text":self.sidebar_rendered_text()}).to_string());
                             }
                         }
                         Some("log") => {
@@ -463,6 +522,78 @@ impl AppController {
                 window.window().dispatch_event(event);
             }
         });
+    }
+
+    fn rendered_text_center(&self, needle: &str) -> Option<(f32, f32)> {
+        use i_slint_core::item_tree::ItemRc;
+        use i_slint_core::items::StyledTextItem;
+        use i_slint_core::window::WindowInner;
+        use std::ops::ControlFlow;
+        let inner = WindowInner::from_pub(self.window.window());
+        let component = inner.try_component()?;
+        let mut found = None;
+        ItemRc::new_root(component).visit_descendants::<()>(|item| {
+            if item.is_visible()
+                && let Some(text) = item.downcast::<StyledTextItem>()
+            {
+                let raw =
+                    i_slint_core::styled_text::get_raw_text(&text.as_pin_ref().text()).into_owned();
+                if raw == needle {
+                    let geometry = item.geometry();
+                    let point = item.map_to_window(geometry.origin);
+                    found = Some((
+                        point.x + geometry.size.width / 2.0,
+                        point.y + geometry.size.height / 2.0,
+                    ));
+                    // Prefer the newest visible pending bubble.
+                }
+            }
+            ControlFlow::Continue(())
+        });
+        found
+    }
+
+    // Inspect the actual rendered sidebar glyph extents in Windows smoke tests.
+    fn sidebar_rendered_text(&self) -> Vec<serde_json::Value> {
+        use i_slint_core::item_tree::ItemRc;
+        use i_slint_core::items::{StyledTextItem, TextWrap};
+        use i_slint_core::window::WindowInner;
+        use slint::Model;
+        use std::ops::ControlFlow;
+        let inner = WindowInner::from_pub(self.window.window());
+        let Some(component) = inner.try_component() else {
+            return Vec::new();
+        };
+        let adapter = inner.window_adapter();
+        let state = self.window.global::<crate::ui::SidebarState>();
+        let titles = state
+            .get_rows()
+            .iter()
+            .filter(|row| row.kind == crate::ui::SidebarRowKind::Thread)
+            .map(|row| row.title.to_string())
+            .collect::<Vec<_>>();
+        let pane_top = self
+            .window
+            .get_sidebar_tooltip_pane()
+            .iter()
+            .nth(1)
+            .unwrap_or(0.0);
+        let mut found = Vec::new();
+        ItemRc::new_root(component).visit_descendants::<()>(|item| {
+            if !item.is_visible() { return ControlFlow::Continue(()) }
+            if let Some(text) = item.downcast::<StyledTextItem>() {
+                let geometry = item.geometry();
+                let point = item.map_to_window(geometry.origin);
+                if point.x >= 0.0 && point.x < self.prefs.sidebar_width && geometry.size.width > 0.0 {
+                    let raw = i_slint_core::styled_text::get_raw_text(&text.as_pin_ref().text()).into_owned();
+                    let size = adapter.renderer().text_size(text.as_pin_ref(), item, None, TextWrap::NoWrap);
+                    let thread = point.y > pane_top && !raw.is_empty() && titles.iter().any(|title| title.starts_with(&raw));
+                    found.push(serde_json::json!({"text":raw,"x":point.x,"y":point.y,"width":geometry.size.width,"measured":size.width,"thread":thread}));
+                }
+            }
+            ControlFlow::Continue(())
+        });
+        found
     }
 
     fn automation_wait_done(&self, step: &Step, started: Instant) -> bool {

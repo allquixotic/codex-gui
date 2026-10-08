@@ -12,12 +12,15 @@ import { ApprovalsView, ApprovalsState } from "approvals.slint";
 import { SettingsView, SettingsState } from "settings.slint";
 import { BedrockState } from "bedrock.slint";
 import { FileView, FilesState } from "files.slint";
-import { Sidebar, SidebarState } from "sidebar.slint";
+import { Sidebar, SidebarState, SidebarTooltip } from "sidebar.slint";
 import { InfoPane, InfoState } from "info.slint";
 import { NewTabView, NewTabState, PickerOverlay, PickerState, PickerItem } from "newtab.slint";
 import { XtabOverlay, XtabState } from "xtab.slint";
 
+import { PendingMessageState, PendingMessageEditor } from "pending-message.slint";
+
 export {
+    PendingMessageState,
     Theme,
     TranscriptState,
     BlockData,
@@ -848,6 +851,8 @@ component Drawer inherits Rectangle {
 }
 
 export component MainWindow inherits Window {
+    out property <[float]> sidebar-tooltip-bounds: [sidebar-tooltip.x / 1px, sidebar-tooltip.y / 1px, sidebar-tooltip.width / 1px, sidebar-tooltip.height / 1px];
+    out property <[float]> sidebar-tooltip-pane: [sidebar-tooltip.pane-x / 1px, sidebar-tooltip.pane-y / 1px, sidebar-tooltip.pane-width / 1px, sidebar-tooltip.pane-height / 1px];
     title: "Codex";
     // Set from Rust (the PNG is embedded by `include_bytes!`, which works
     // the same under Cargo and Bazel).
@@ -868,6 +873,7 @@ export component MainWindow inherits Window {
         root.update-pane-fit();
         SidebarState.width-changed(AppState.sidebar-width);
     }
+    property <length> drawer-sidebar-width: min(root.sidebar-pane-width, root.width - 280px);
     property <length> info-pane-width: 281px;
     property <length> min-content-width: 540px;
 
@@ -1068,7 +1074,7 @@ export component MainWindow inherits Window {
                     }
                 }
 
-                Rectangle {
+                conversation-pane := Rectangle {
                     horizontal-stretch: 1;
 
                     if !AppState.has-active-tab || AppState.active-kind == TabKindCode.new-tab: NewTabView { }
@@ -1086,12 +1092,20 @@ export component MainWindow inherits Window {
             }
         }
 
+        sidebar-tooltip := SidebarTooltip {
+            // A narrow-window drawer occupies part of the conversation pane.
+            pane-x: max(conversation-pane.absolute-position.x, AppState.sidebar-drawer-open && !AppState.sidebar-fits ? root.drawer-sidebar-width : 0px);
+            pane-y: conversation-pane.absolute-position.y;
+            pane-width: max(0px, conversation-pane.absolute-position.x + conversation-pane.width - self.pane-x);
+            pane-height: conversation-pane.height;
+        }
+
         // Narrow windows: the sidebar and info pane open over the content.
         if AppState.sidebar-drawer-open && !AppState.sidebar-fits: Drawer {
             y: strip.height + banner.height;
             width: parent.width;
             height: parent.height - self.y;
-            pane-width: root.sidebar-pane-width;
+            pane-width: root.drawer-sidebar-width;
             dismissed => { AppState.sidebar-drawer-open = false; }
             HorizontalLayout {
                 Sidebar { }
@@ -1130,6 +1144,8 @@ export component MainWindow inherits Window {
         width: parent.width;
         height: parent.height;
     }
+
+    if PendingMessageState.open: PendingMessageEditor { width: parent.width; height: parent.height; }
 
     if AppState.dialog-open: Dialog {
         width: parent.width;

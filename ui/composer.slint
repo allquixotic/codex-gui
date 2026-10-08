@@ -76,6 +76,7 @@ export global ComposerState {
     in property <string> context-label;
 
     callback send();
+    callback steer();
     callback interrupt();
     callback input-changed(text: string, cursor: int);
     callback accept-suggestion(row: int);
@@ -209,6 +210,10 @@ component ComposerInput inherits Rectangle {
                         }
                     }
                     if event.text == Key.Return && self.preedit-text == "" {
+                        if ComposerState.enter-action(ComposerState.enter-sends, event.modifiers.shift, event.modifiers.control, event.modifiers.meta, event.modifiers.alt) == 2 {
+                            ComposerState.steer();
+                            return accept;
+                        }
                         if ComposerState.enter-action(ComposerState.enter-sends, event.modifiers.shift, event.modifiers.control, event.modifiers.meta, event.modifiers.alt) == 1 {
                             ComposerState.send();
                             return accept;
@@ -816,9 +821,16 @@ export component ComposerView inherits Rectangle {
                             ComposerState.interrupt();
                         }
                     }
+                    if ComposerState.busy: FlatButton {
+                        text: "Steer";
+                        enabled: ComposerState.enabled && (ComposerState.text != "" || ComposerState.attachments.length > 0);
+                        clicked => { ComposerState.steer(); }
+                        Tooltip { text: @markdown("Send into the running turn as soon as possible (Shift+Enter)"); }
+                    }
                     FlatButton {
                         text: ComposerState.send-label;
                         primary: true;
+                        Tooltip { text: @markdown("Send after the entire current turn finishes (Enter). Alt+Enter inserts a new line."); }
                         enabled: ComposerState.enabled && (ComposerState.text != "" || ComposerState.attachments.length > 0);
                         clicked => {
                             ComposerState.send();

@@ -1,6 +1,6 @@
 [package]
 name = "codex-gui"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2024"
 license = "Apache-2.0"
 build = "build.rs"
@@ -137,47 +137,47 @@ default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
-codex-code-mode-host = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-http-client = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-otel-trace-websocket = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-windows-sandbox = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-utils-process = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-utils-pty = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-rollout-trace = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-core = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-model-provider-info = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-code-mode-host = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-http-client = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-otel-trace-websocket = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-windows-sandbox = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-utils-process = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-utils-pty = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-rollout-trace = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-core = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-model-provider-info = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
 anyhow = "1"
 arboard = { version = "3", features = ["wayland-data-control"] }
 base64 = "0.22.1"
 clap = "4"
-codex-ansi-escape = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-app-server-client = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-app-server-protocol = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-arg0 = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-async-utils = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-models-manager = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-aws-auth = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-build-info = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-cloud-config = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-config = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-context-fragments = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-exec-server = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-feedback = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-file-search = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-lmstudio = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-git-utils = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-login = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-model-provider = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-ollama = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-otel = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-protocol = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-rollout = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-state = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-utils-absolute-path = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-utils-cli = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-utils-home-dir = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-utils-path-uri = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
-codex-worktree = { git = "https://github.com/openai/codex", rev = "979011409de0a60b52f179721948e65531d26144" }
+codex-ansi-escape = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-app-server-client = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-app-server-protocol = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-arg0 = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-async-utils = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-models-manager = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-aws-auth = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-build-info = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-cloud-config = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-config = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-context-fragments = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-exec-server = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-feedback = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-file-search = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-lmstudio = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-git-utils = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-login = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-model-provider = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-ollama = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-otel = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-protocol = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-rollout = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-state = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-utils-absolute-path = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-utils-cli = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-utils-home-dir = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-utils-path-uri = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
+codex-worktree = { git = "https://github.com/openai/codex", rev = "c1382380de69521303b416720a52f42d51af6248" }
 dirs = "6"
 dunce = "1.0.4"
 futures = { version = "0.3", default-features = false }
@@ -257,14 +257,16 @@ strip = false
 
 [patch.crates-io]
 i-slint-core = { path = "third_party/slint/i-slint-core" }
-crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "efa177859fd9623d57b9fe7ae9bf491ae1ac6ec4" }
+crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "ed1cdab335221515706178d68495bba2aed1924f" }
 tokio-tungstenite = { git = "https://github.com/openai-oss-forks/tokio-tungstenite", rev = "0e5b2d73aa18dd9f0a50ee9ff199d5aef7594186" }
 tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }
 
 [patch."ssh://git@github.com/openai-oss-forks/tungstenite-rs.git"]
 tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }
 
-# Generated from the pinned stable source + the minimal, reviewed patch below.
+
+# Stable source with the reviewed Sol and pending-steer patches.
 [patch."https://github.com/openai/codex"]
 codex-model-provider = { path = ".patched/codex-model-provider" }
 codex-core = { path = ".patched/codex-core" }
+codex-app-server = { path = ".patched/codex-app-server" }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create standalone crates from stable source plus minimal Bedrock tier patches.
+"""Create standalone crates from stable source plus minimal reviewed patches.
 Generated sources stay ignored; all other Codex crates remain Git dependencies.
 """
 import hashlib
@@ -105,7 +105,7 @@ def materialize():
         stamp = {'revision': pin['revision'], 'patchSha256': hashlib.sha256(patch.read_bytes()).hexdigest()}
         (source / 'patch-provenance.json').write_text(json.dumps(stamp, indent=2) + '\n')
         install_generated(source, ROOT / '.patched' / name)
-        print(f'Materialized stable {name} with the Bedrock tier backport')
+        print(f'Materialized stable {name} with its reviewed patch')
     shutil.rmtree(temporary)
 
 

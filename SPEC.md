@@ -39,6 +39,14 @@ V9: Conversation selection ! match rendered rich/plain glyphs and UTF-8 grapheme
 
 V10: Mac native payload ! contain arm64 + x86_64 slices, verified by actual Apple tools before signing; dynamic dependencies ! Apple system libraries only. Release ! sign every native payload with expected identity + secure timestamp; Mac ! harden runtime, restrict V8 entitlements to code-mode helper; execute IPC on both slices, staple accepted app before DMG construction, accept both Apple logs, validate DMG + mounted app. Attestation ! bind final package bytes to exact successful source/workflow; temporary Mac runner ! manual main only, no GUI, remove after job.
 
+V11: Composer Enter ! queue after entire active turn; Shift+Enter ! steer as soon as possible; Alt+Enter ! newline; explicit Queue and Steer coexist while busy; per-message intent ! survive startup and image preparation.
+
+V12: Every sidebar tooltip ! remain fully inside conversation-pane bounds at all window sizes and pointer positions; wrapped text ! remain readable without blocking sidebar rows. Generated titles ! use natural spaced words, representative font-width budget and measured final fit without ellipses. Tooltip purpose ! directly describe work, never narrate the requester.
+
+V13: Viewing/resuming/reading ! never advance thread activity; user/agent/tool changes ! advance it. Read state ! persist independently of activity; blue filled ! unread or running, empty ! visited/read idle, absent ! unvisited idle, warning ! needs input, red ! failure.
+
+V14: Pending-message pencil ! edit or delete local unsent input and server queue entries; preserve non-text attachments; queue update/delete ! atomic backend boundary; consumed input ! never silently rewrite history; failed/racing edits ! retain draft.
+
 ## §T TASKS
 id|status|task|cites
 T1|x|Fix small-scroll tail feedback|V1,I.scroll
@@ -57,6 +65,13 @@ T8|x|Persistent background purpose summaries, manual-title protection and resiza
 T9|x|Selectable user/assistant conversation text, keyboard/clipboard/context menu; verify and ship with T8|V9,I.links
 
 T10|x|Build, sign, notarize/staple and attest 0.3.1 Windows/Mac packages; verify exact bytes, publish and remove temporary runner|V10,I.distribution; GUI.md §25
+
+T11|.|Integrate stable 0.162.0; replace Astra patches with minimal upstream Sol catalog backport|V5
+T12|.|Explicit queue/steer input and key routing, including delayed input|V11,I.questions
+T13|.|Bound sidebar tooltips, readable summaries and persistent activity/read state|V7,V8,V12,V13,I.summaries
+T14|.|Verify Windows software/GPU interactions; sign, attest and publish 0.4.0 for Windows/Mac|V10,I.distribution
+
+T15|.|Edit/delete pending messages from transcript, preserving delivery intent and attachment data; verify Windows races|V14,I.questions
 
 ## §B BUGS
 id|date|cause|fix
@@ -101,3 +116,15 @@ B20|2026-10-07|allow-jit alone works on arm64 but signed x86_64 V8 traps during 
 B21|2026-10-07|Native lzma-sys pkg-config discovery links MacPorts liblzma and adds its search path, also selecting MacPorts libiconv in the ARM GUI|V10; use supported LZMA_API_STATIC build switch, check dependencies before packaging, and test rejection with a real temporary dylib
 
 Release evidence: v0.3.1, source 084b9f8271a61abee6e22630df91f3c8265062dc; Windows run 37721517380 passed 629 tests, interaction gates, Azure signing and attestation. The exact signed ZIP passed signatures/timestamps, helper checks, question forms and software/GPU purpose/selection tests on games. Mac run 37721517143 passed 638 headless tests, dual-architecture signed helper IPC/JIT, both Accepted notarizations, staples and Gatekeeper including the mounted app. Both online/bundled attestations and all eight GitHub upload digests verified. Temporary Mac runner deregistered and removed; no Mac GUI launched. See GUI.md §25.
+
+B22|2026-10-08|Sidebar tooltips use native cursor-relative popups that can leave the screen and cover neighboring rows|V12; single bounded conversation-pane overlay
+B23|2026-10-08|Widest-glyph character budget severely underfills normal prose; summary prompt permits compressed labels and requester narration|V12; representative width, measured final fit and explicit natural-language prompts
+B24|2026-10-08|Sidebar uses generic update time and open-tab phase as activity/read status; resume writes look like conversation progress|V13; meaningful turn timestamps and separate persistent read state
+
+B25|2026-10-08|Stable 0.162 adds turn lineage, subagent model telemetry and string skill paths|Adapt typed constructors and skill paths; stable API migration, no new invariant
+
+B26|2026-10-08|New pencil tooltip passed plain string to styled-text Slint property|Use explicit markdown conversion; compile-time regression
+
+B27|2026-10-08|Glob protocol import shadows std Result and fixture uses obsolete image field|Explicit imports and current image/detail shape
+
+B28|2026-10-08|New automation measurement borrows an existing item reference; activity read condition nests a collapsible branch|Remove redundant borrow and collapse condition; mechanical lint cleanup, no new invariant

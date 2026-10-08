@@ -44,7 +44,7 @@ def check(check_latest=False):
     assert pin['tag'] == 'rust-v' + pin['version']
     assert re.fullmatch(r'[0-9a-f]{40}', pin['revision'])
     patched_crates = {patch['crate'] for patch in pin['patches']}
-    assert patched_crates <= {'codex-model-provider', 'codex-core'}, 'Review changes to the minimal patch inventory'
+    assert patched_crates <= {'codex-model-provider', 'codex-core', 'codex-app-server'}, 'Review changes to the minimal patch inventory'
     for patch in pin['patches']:
         assert (ROOT / patch['file']).is_file(), patch['file']
     manifest = tomllib.loads((ROOT / 'Cargo.toml').read_text())
