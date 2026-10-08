@@ -40,7 +40,8 @@ all working features; `SPEC.md` records focused invariants and regressions.
   hosts are available through SSH; read their AGENTS.md before remote changes.
   Hosted Windows CI also runs the complete software-rendered unit fixture.
 - Run targeted checks during development. Full release builds follow completed
-  source changes and development verification. Defer Mac release builds/signing.
+  source changes and development verification. Mac distribution builds/signing run
+  only for an explicitly requested release; never run Mac GUI tests.
 - Keep UI-thread callbacks free of blocking I/O; use the existing backend pump
   and typed requests. Keep transcript virtualization and memory limits.
 - Purpose summaries consume completed user requests only; use the existing fast
@@ -77,6 +78,22 @@ all working features; `SPEC.md` records focused invariants and regressions.
   Preserve the setup helper’s scoped asInvoker manifest in runtime-helpers/build.rs.
   Keep helper package version/source paths, manifest link flags and Windows API features in sync
   when updating the stable backend.
+- Windows main packages use Azure Artifact Signing with the existing OIDC binding;
+  verify every executable has the expected publisher and RFC3161 timestamp.
+  PR packages stay unsigned. Attest the final ZIP after signing and packaging.
+- `macos-release.yml` is manual-only on main. Use a temporary, one-job Mac ARM64
+  runner labeled `codex-gui-signing`, running as Sean with his existing keychain;
+  remove registration afterward. Do not install a persistent runner service or
+  export/import signing keys. Never dispatch PR code to a signing runner.
+- Build universal arm64/x86_64 binaries with `scripts/build-macos.sh`. Mac tests
+  must skip `window_runtime::tests`. `scripts/package-macos.py` uses the pinned
+  2031 Application identity and AC_NOTARY; sign nested executables inside out,
+  grant allow-jit only to the V8 code-mode helper, verify actual IPC execution,
+  then notarize/staple/assess the app before creating the DMG. Sign, notarize,
+  staple and assess the DMG and mounted app. Inspect both Apple logs. No PKG.
+- Attest only final signed/stapled distribution bytes inside their build workflow;
+  preserve Sigstore bundles and verify `gh attestation verify --repo
+  allquixotic/codex-gui` against the exact release SHA/workflow before publication.
 - Keep Apache LICENSE, upstream attribution in NOTICE, third-party licenses,
   user guide and exact build/pin metadata in packages.
 - Publish from a successful workflow for the exact commit; verify GitHub asset

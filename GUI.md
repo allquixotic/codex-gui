@@ -1,11 +1,11 @@
 # codex-gui: a native Slint front end for Codex
 
-Status: standalone `allquixotic/codex-gui` repository, product version 0.3.0.
+Status: standalone `allquixotic/codex-gui` repository, product version 0.3.1.
 The GUI source lives at the repository root (`src/`, `ui/`, `assets/`).
 It embeds stable Codex 0.161.0 at immutable release commit
 `979011409de0a60b52f179721948e65531d26144`, with one minimal Bedrock tier backport (see `patches/README.md`).
 Windows x64 builds are produced by GitHub Actions on pushes to `main`.
-macOS release builds remain deferred; GUI launches/tests on Sean's Mac remain prohibited.
+macOS release builds/signing are authorized for 0.3.1; GUI launches/tests on Sean's Mac remain prohibited.
 
 This is our specification document. Its original upstream source survey, historical
 paths and implementation reports are retained for context; §19 defines the current
@@ -1307,3 +1307,28 @@ whole-program LTO disabled and 16 codegen units. The GUI executable build took
 about 14 minutes on the hosted runner, compared with 50 minutes in the earlier
 run. This reduces build time at the cost of a larger executable/package. The
 Windows x64 ZIP for 0.3.0 is approximately 151 MiB.
+
+
+## 25. Signed cross-platform release (0.3.1)
+
+Ship all 0.3.0 features unchanged, with signed Windows x64 executables in a ZIP
+and a universal Apple Silicon/Intel macOS DMG (macOS 14+). Keep license notices,
+user guide, exact GUI commit and stable Codex pin in both packages.
+
+Windows uses existing Azure Artifact Signing OIDC credentials; all four
+executables must have valid Sean McNamara Authenticode signatures and RFC3161
+timestamps before ZIP creation. Windows main-push builds remain automatic.
+
+Mac uses the existing pinned Developer ID Application certificate expiring
+in 2031 and AC_NOTARY keychain profile. The universal app and code-mode helper
+use hardened runtime and secure timestamps; only the V8 helper receives allow-jit.
+Verify actual helper IPC/JavaScript execution without launching the GUI. Notarize
+and staple the app first, then create, sign, notarize and staple its DMG. Require
+Accepted notarization logs and Gatekeeper/stapler verification of both container
+and mounted app. No PKG or Installer certificate is needed.
+
+Both workflows generate GitHub artifact attestations for final distribution
+bytes and retain offline Sigstore bundles. Mac builds/signing run in a temporary
+one-job self-hosted Actions runner on Sean's Mac; manual main only, no exported
+keys, persistent runner service or GUI tests. Verify package hashes, provenance
+source/workflow and platform signatures before publishing; remove the runner.

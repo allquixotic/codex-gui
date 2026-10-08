@@ -1,0 +1,54 @@
+name: Signed macOS release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: macos-signed-release
+  cancel-in-progress: false
+jobs:
+  macos:
+    # Register an ephemeral runner only for an explicitly requested release.
+    # Never expose the signing keychain to pull requests or run GUI fixtures.
+    if: github.repository == 'allquixotic/codex-gui' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, macOS, ARM64, codex-gui-signing]
+    timeout-minutes: 300
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      STABLE_GIT_COMMIT: ${{ github.sha }}
+      NOTARY_PROFILE: AC_NOTARY
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Build universal binaries and run headless tests
+        run: bash scripts/build-macos.sh
+      - name: Sign, notarize, staple and assess app and DMG
+        run: python3 scripts/package-macos.py
+      - name: Attest final signed and stapled DMG
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*.dmg
+      - name: Preserve macOS attestation bundle
+        run: cp '${{ steps.provenance.outputs.bundle-path }}' dist/macos-attestation.sigstore.json
+      - name: Upload signed Mac distribution
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: codex-gui-macos-universal
+          path: |
+            dist/*.dmg
+            dist/*.sha256
+            dist/*attestation.sigstore.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload public signing and notarization evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: macos-signing-evidence
+          path: dist/macos-signing-evidence/
+          if-no-files-found: ignore

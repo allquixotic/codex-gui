@@ -10,7 +10,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 pin = json.loads((ROOT / 'upstream.json').read_text())
 target = sys.argv[1]
-assert target in ('x86_64-pc-windows-msvc', 'aarch64-pc-windows-msvc', 'aarch64-apple-darwin', 'x86_64-unknown-linux-gnu')
+assert target in ('x86_64-pc-windows-msvc', 'aarch64-pc-windows-msvc', 'aarch64-apple-darwin', 'x86_64-apple-darwin', 'x86_64-unknown-linux-gnu')
 version = pin['v8']
 base = f'https://github.com/openai/codex/releases/download/rusty-v8-v{version}'
 profile = 'ptrcomp_sandbox_release'

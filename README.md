@@ -17,15 +17,18 @@ Get the Windows x64 ZIP from [Releases](https://github.com/allquixotic/codex-gui
 Extract the whole directory and run `codex-gui.exe`; keep all three helper executables
 beside it. Windows builds are also uploaded as artifacts by
 [GitHub Actions](https://github.com/allquixotic/codex-gui/actions/workflows/windows.yml)
-after every push to `main`. macOS and Linux source builds remain supported;
-macOS release builds and signing are deferred.
+after every push to `main`. Main packages are Azure Authenticode signed.
+The macOS universal DMG supports Apple Silicon and Intel on macOS 14+; drag
+`Codex GUI.app` to Applications. The app and DMG are Developer ID signed,
+notarized and stapled. Both distributions carry GitHub artifact attestations.
+Linux source builds remain supported. See [release verification](docs/releases.md).
 
 [GUI.md](GUI.md) is the product specification. [The user guide](docs/gui.md)
 explains everyday use; [AGENTS.md](AGENTS.md) describes maintenance.
 
 ## Stable upstream dependency
 
-Codex GUI 0.3.0 embeds **Codex 0.161.0**, stable tag `rust-v0.161.0`, pinned to
+Codex GUI 0.3.1 embeds **Codex 0.161.0**, stable tag `rust-v0.161.0`, pinned to
 `979011409de0a60b52f179721948e65531d26144`. `upstream.json`, the Cargo Git dependencies
 and `Cargo.lock` record the exact backend. One minimal Bedrock tier backport
 across the provider and request builder restores Bedrock Astra Ultrafast and preserves custom catalogs’ tiers; see
@@ -151,7 +154,7 @@ The mock's reply depends on the message prefix (`markdown`, `run <cmd>`,
 ## Packaging
 
 - macOS: `packaging/macos/bundle-app.sh <binary> <out-dir> <version>
-  [--bundle-id ID] [--helper PATH]...` builds an unsigned `Codex.app`;
+  [--bundle-id ID] [--helper PATH]...` builds an unsigned `Codex GUI.app`;
   helpers are copied next to `codex-gui` in `Contents/MacOS`.
 - `.github/workflows/windows.yml` builds and tests Windows x64 on hosted
   GitHub runners for pushes to main and pull requests. The ZIP holds `codex-gui` plus the helper
@@ -162,6 +165,9 @@ The mock's reply depends on the message prefix (`markdown`, `run <cmd>`,
   from `src/app.rs` (not a Slint `@image-url`, which would embed the build
   script's absolute path and break Bazel's sandboxed compile).
 
+- `macos-release.yml` builds/signs a universal DMG on a temporary local Actions
+  runner using the existing keychain; see [release maintenance](docs/releases.md).
+
 ## License note
 
 Slint is used under the Slint Royalty-free Desktop License 2.0, which requires
@@ -171,8 +177,8 @@ Vendored Slint sources retain their own licenses. The packaged `NOTICE` preserve
 upstream attribution; this project has its own informal [contribution guidelines](CONTRIBUTING.md).
 
 Use targeted development checks while implementing. Full release builds wait
-until all requested work and relevant checks are complete; macOS release builds
-and signing are deferred. For completed packages, `packaging/publish-release.sh`
+until all requested work and relevant checks are complete. Mac distribution
+builds/signing run only for explicitly requested releases; never launch Mac GUI tests. For completed packages, `packaging/publish-release.sh`
 uploads to an existing GitHub release, verifies SHA-256 asset digests, then cleans
 local Cargo outputs and the published packages. See GUI.md §7 for memory and
 interaction priorities and when to investigate performance.

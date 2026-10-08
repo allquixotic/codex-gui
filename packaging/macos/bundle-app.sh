@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wraps a built codex-gui binary into Codex.app.
+# Wraps a built codex-gui binary into Codex GUI.app.
 #
 # Usage: bundle-app.sh <codex-gui binary> <output dir> <version>
 #                      [--bundle-id ID] [--helper PATH]...
@@ -16,7 +16,7 @@ binary="$1"
 out_dir="$2"
 version="$3"
 shift 3
-bundle_id="com.openai.codex.gui"
+bundle_id="com.allquixotic.codex-gui"
 helpers=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -37,7 +37,7 @@ done
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 icon_png="${here}/../../ui/assets/icon.png"
-app="${out_dir}/Codex.app"
+app="${out_dir}/Codex GUI.app"
 
 rm -rf "$app"
 mkdir -p "${app}/Contents/MacOS" "${app}/Contents/Resources"

@@ -212,14 +212,14 @@ with `--renderer software` and keep whichever feels smoother.
 - The app embeds its own app-server. If you also run the TUI with its shared
   daemon, avoid opening the same thread in both at once (only one writer may
   own a thread); `--remote unix://` makes the app use the daemon instead.
-- macOS: when Codex.app is started from Finder or the Dock, it takes `PATH`
+- macOS: when Codex GUI.app is started from Finder or the Dock, it takes `PATH`
   from your login shell, so MCP servers and hooks find tools such as `npx`,
   `uvx` or `docker`. Only login files are read (`~/.zprofile`, `~/.zshenv`,
   `~/.zlogin`, or `~/.bash_profile` / `~/.profile`), not `~/.zshrc`; put
   `PATH` changes there, or start Codex from a terminal.
 - Desktop notifications (a reply finished, or a thread needs you) appear
   while the window is minimized or another app is in front. On macOS they
-  come from Codex.app; on Windows they currently appear as coming from
+  come from Codex GUI.app; on Windows they currently appear as coming from
   Windows PowerShell.
 - Release downloads include the helper programs Codex runs next to
   `codex-gui` (`codex-code-mode-host`, and on Windows the sandbox helpers);
@@ -237,8 +237,8 @@ configured provider, with your usual model as fallback. It sends message excerpt
 to that provider. Common and All settings offer model, reasoning and context choices.
 
 Use development builds for iteration. Make a release build only after completing
-all requested changes and relevant checks, skip macOS release builds for now, and
-clean local build artifacts after verifying the binaries uploaded to GitHub.
+all requested changes and relevant checks; build/sign Mac distributions only for
+explicitly requested releases. Never run Mac GUI tests. Clean local build artifacts after verifying the binaries uploaded to GitHub.
 
 ## Questions from Codex
 

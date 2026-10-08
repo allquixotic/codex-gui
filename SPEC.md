@@ -7,7 +7,7 @@ Broader GUI contract: repository `GUI.md`.
 ## §C CONSTRAINTS
 - Independent allquixotic/codex-gui; Apache-2.0; latest stable Codex release only, immutable Git pin, minimal documented Codex patches.
 - Native Slint 1.18.1; bound transcript memory; no idle repaint polling.
-- Windows x64 release first; macOS release builds deferred.
+- Windows x64 ZIP and universal macOS DMG; signed distribution and GitHub attestations; no PKG.
 - Never run GUI tests or launch this project's GUI on Sean's Mac unless the user explicitly says "test the GUI on this Mac"; use Windows hosts.
 - Full release build only after fixes and development verification complete.
 - Verify GitHub asset digest before deleting local build outputs.
@@ -18,6 +18,7 @@ Broader GUI contract: repository `GUI.md`.
 - I.questions: synchronous server-request forms; asynchronous message forms and ordinary send/steer/queue replies.
 - I.speed: provider-catalog speed picker; thread/settings/update and turn/start.
 - I.summaries: sidebar titles/tooltips, resize handle; GUI-only persistent cache, ephemeral fast-model requests.
+- I.distribution: Azure Authenticode, Developer ID Application, Apple notarization/stapling, GitHub artifact attestations.
 - I.links: glyph hover, Copy link, Open in browser, Open file.
 
 ## §V INVARIANTS
@@ -36,6 +37,8 @@ V8: Cache ! survive restart under resolved CODEX_HOME; any manual rename ! perma
 
 V9: Conversation selection ! match rendered rich/plain glyphs and UTF-8 graphemes; pointer drag + Shift/arrows ! select; Ctrl/Cmd+C and menu Copy ! selected plain text; links and markdown ! preserve; tab change ! clear; selected scene ! remain bounded.
 
+V10: Release ! sign every native payload with expected identity + secure timestamp; Mac ! harden runtime, restrict JIT entitlement to V8 helper, staple accepted app before DMG construction, accept both Apple logs, validate DMG + mounted app. Attestation ! bind final package bytes to exact successful source/workflow; temporary Mac runner ! manual main only, no GUI, remove after job.
+
 ## §T TASKS
 id|status|task|cites
 T1|x|Fix small-scroll tail feedback|V1,I.scroll
@@ -52,6 +55,8 @@ T7|x|Fix asynchronous question forms, reply delivery, history replay and Windows
 T8|x|Persistent background purpose summaries, manual-title protection and resizable sidebar; verify and ship next release|V7,V8,I.summaries
 
 T9|x|Selectable user/assistant conversation text, keyboard/clipboard/context menu; verify and ship with T8|V9,I.links
+
+T10|.|Build, sign, notarize/staple and attest 0.3.1 Windows/Mac packages; verify exact bytes, publish and remove temporary runner|V10,I.distribution
 
 ## §B BUGS
 id|date|cause|fix
