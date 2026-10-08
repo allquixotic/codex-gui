@@ -85,7 +85,8 @@ all working features; `SPEC.md` records focused invariants and regressions.
   runner labeled `codex-gui-signing`, running as Sean with his existing keychain;
   remove registration afterward. Do not install a persistent runner service or
   export/import signing keys. Never dispatch PR code to a signing runner.
-- Build universal arm64/x86_64 binaries with `scripts/build-macos.sh`. Mac tests
+- Build universal arm64/x86_64 binaries with `scripts/build-macos.sh`; retain
+  LZMA_API_STATIC and the per-slice/dependency guards. Mac tests
   must skip `window_runtime::tests`. `scripts/package-macos.py` uses the pinned
   2031 Application identity and AC_NOTARY; sign nested executables inside out,
   apply the pinned upstream V8 helper entitlements only to that helper, verify

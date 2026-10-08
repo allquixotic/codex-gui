@@ -7,6 +7,9 @@ python3 scripts/upstream.py prepare
 cargo fmt --all -- --check
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
 export MACOSX_DEPLOYMENT_TARGET=14.0
+# lzma-sys otherwise discovers host package-manager dylibs via pkg-config;
+# its supported static switch compiles the bundled codec for each target.
+export LZMA_API_STATIC=1
 export CARGO_PROFILE_RELEASE_DEBUG=0
 export CARGO_PROFILE_RELEASE_LTO=false
 export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
@@ -24,6 +27,8 @@ for target in aarch64-apple-darwin x86_64-apple-darwin; do
     fi
     cargo build --locked --release --target "$target" --bin codex-gui
     cargo build --locked --release --target "$target" -p gui-runtime-helpers --bin codex-code-mode-host
+    python3 scripts/verify-macos-dependencies.py "target/$target/release/codex-gui" \
+        "target/$target/release/codex-code-mode-host"
 done
 mkdir -p target/universal-release
 for binary in codex-gui codex-code-mode-host; do

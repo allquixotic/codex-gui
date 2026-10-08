@@ -101,10 +101,7 @@ def main():
         raise RuntimeError(f'Unexpected native inventory: {native}; review nested signing order')
     for path in sorted(native):
         run('bash', 'scripts/verify-macos-architectures.sh', path)
-        dependencies = run('otool', '-L', path, capture=True)
-        if any(line.startswith('\t') and not line.strip().startswith(('/System/Library/', '/usr/lib/'))
-               for line in dependencies.splitlines()):
-            raise RuntimeError(f'Non-system dynamic dependency in {path}: {dependencies}')
+        run(sys.executable, 'scripts/verify-macos-dependencies.py', path)
         args = ['codesign', '--force', '--timestamp', '--options', 'runtime', '--sign', IDENTITY,
                 '--identifier', BUNDLE + '.' + path.name]
         if path.name == 'codex-code-mode-host':

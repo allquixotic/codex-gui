@@ -27,7 +27,9 @@ The GUI receives neither, and no executable disables library validation or
 enables debugger access. IPC smoke tests force both architectures and run
 JavaScript in the signed helper without starting the GUI. The early
 `dev/macos-packaging-check.sh` gate checks real Apple lipo slice verification and
-the exact helper entitlement inventory before compilation. Sign with Application SHA-1
+the exact helper entitlement inventory before compilation. Build with
+`LZMA_API_STATIC=1` so local pkg-config libraries cannot leak into the bundle;
+`verify-macos-dependencies.py` rejects every non-Apple dynamic dependency. Sign with Application SHA-1
 `9A3CFFC04D3472208A62C48E707EA6D4261998A1`, team `B6XDYNLMPU`, expiring
 September 17, 2031; never select an ambiguous certificate by name. No PKG is built.
 

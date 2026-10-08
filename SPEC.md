@@ -37,7 +37,7 @@ V8: Cache ! survive restart under resolved CODEX_HOME; any manual rename ! perma
 
 V9: Conversation selection ! match rendered rich/plain glyphs and UTF-8 graphemes; pointer drag + Shift/arrows ! select; Ctrl/Cmd+C and menu Copy ! selected plain text; links and markdown ! preserve; tab change ! clear; selected scene ! remain bounded.
 
-V10: Mac native payload ! contain arm64 + x86_64 slices, verified by actual Apple tools before signing. Release ! sign every native payload with expected identity + secure timestamp; Mac ! harden runtime, restrict V8 entitlements to code-mode helper; execute IPC on both slices, staple accepted app before DMG construction, accept both Apple logs, validate DMG + mounted app. Attestation ! bind final package bytes to exact successful source/workflow; temporary Mac runner ! manual main only, no GUI, remove after job.
+V10: Mac native payload ! contain arm64 + x86_64 slices, verified by actual Apple tools before signing; dynamic dependencies ! Apple system libraries only. Release ! sign every native payload with expected identity + secure timestamp; Mac ! harden runtime, restrict V8 entitlements to code-mode helper; execute IPC on both slices, staple accepted app before DMG construction, accept both Apple logs, validate DMG + mounted app. Attestation ! bind final package bytes to exact successful source/workflow; temporary Mac runner ! manual main only, no GUI, remove after job.
 
 ## §T TASKS
 id|status|task|cites
@@ -97,3 +97,5 @@ Release evidence: v0.3.0, commit e3494e5943458e61b5209ba7761bdbd02f4922e1; hoste
 B19|2026-10-07|Installed Apple lipo rejects combined two-architecture -verify_arch invocation even with input-first order|V10; verify slices independently and add real clang/lipo universal-positive plus single-slice-negative headless packaging gate
 
 B20|2026-10-07|allow-jit alone works on arm64 but signed x86_64 V8 traps during code-range setup; unsigned control passes and stable upstream already includes allow-unsigned-executable-memory|V10; reuse exact upstream helper entitlements, keep GUI unentitled, force both architectures through signed IPC/JIT regression before notarization
+
+B21|2026-10-07|Native lzma-sys pkg-config discovery links MacPorts liblzma and adds its search path, also selecting MacPorts libiconv in the ARM GUI|V10; use supported LZMA_API_STATIC build switch, check dependencies before packaging, and test rejection with a real temporary dylib
