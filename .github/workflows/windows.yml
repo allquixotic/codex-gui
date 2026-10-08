@@ -13,6 +13,9 @@ jobs:
   windows:
     runs-on: windows-2025
     timeout-minutes: 180
+    permissions:
+      contents: read
+      id-token: write
     env:
       # Upstream's long snapshot filenames are checked out even when TUI is not built.
       CARGO_HOME: D:/c
@@ -93,6 +96,45 @@ jobs:
           name: windows-purpose-selection-evidence
           path: dist/purpose-selection-smoke/
           if-no-files-found: ignore
+      # Azure trusts only this repository's immutable OIDC subject on main.
+      # PRs continue to build unsigned packages without Azure access.
+      - name: Sign in to Azure for Windows signing
+        if: github.repository == 'allquixotic/codex-gui' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Sign Windows executables
+        if: github.repository == 'allquixotic/codex-gui' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          signing-account-name: allquixotic-signing
+          certificate-profile-name: windows-public
+          files: |
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/codex-gui.exe
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/codex-code-mode-host.exe
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/codex-windows-sandbox-setup.exe
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/codex-command-runner.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-environment-credential: true
+      - name: Verify Windows signatures before packaging
+        if: github.repository == 'allquixotic/codex-gui' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          $executables = 'codex-gui.exe', 'codex-code-mode-host.exe', 'codex-windows-sandbox-setup.exe', 'codex-command-runner.exe'
+          foreach ($executable in $executables) {
+            $path = Join-Path 'target/x86_64-pc-windows-msvc/release' $executable
+            $signature = Get-AuthenticodeSignature -LiteralPath $path
+            if ($signature.Status -ne 'Valid' -or
+                $signature.SignerCertificate.Subject -ne 'CN=Sean McNamara, O=Sean McNamara, L=Pasadena, S=MD, C=US' -or
+                $null -eq $signature.TimeStamperCertificate) {
+              throw "Missing, invalid, untimestamped, or unexpected signature on ${executable}: $($signature.Status)"
+            }
+            Write-Host "Verified $executable signed by $($signature.SignerCertificate.Subject)"
+          }
       - name: Package Windows executables and licenses
         run: ./scripts/package-windows.ps1
       - name: Upload Windows package

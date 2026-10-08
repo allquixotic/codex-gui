@@ -1,0 +1,47 @@
+name: Verify Azure signing
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.repository == 'allquixotic/codex-gui' && github.ref == 'refs/heads/main'
+    runs-on: windows-2025
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Create harmless signing probe
+        shell: pwsh
+        run: |
+          'public class SigningProbe { public static void Main() { System.Console.WriteLine("Codex GUI signing verification"); } }' | Set-Content signing-probe.cs
+          & "$env:WINDIR/Microsoft.NET/Framework64/v4.0.30319/csc.exe" /nologo /target:exe /out:signing-probe.exe signing-probe.cs
+          if ($LASTEXITCODE -ne 0) { throw 'Signing probe compilation failed' }
+      - name: Sign in to Azure
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Sign probe
+        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          signing-account-name: allquixotic-signing
+          certificate-profile-name: windows-public
+          files: ${{ github.workspace }}/signing-probe.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-environment-credential: true
+      - name: Verify trusted signature and timestamp
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature -LiteralPath signing-probe.exe
+          if ($signature.Status -ne 'Valid' -or
+              $signature.SignerCertificate.Subject -ne 'CN=Sean McNamara, O=Sean McNamara, L=Pasadena, S=MD, C=US' -or
+              $null -eq $signature.TimeStamperCertificate) {
+            throw "Signing verification failed: $($signature.Status) $($signature.StatusMessage)"
+          }
+          "### Azure signing verified`n`nPublisher: $($signature.SignerCertificate.Subject)`n`nSignature: Valid; timestamp present." >> $env:GITHUB_STEP_SUMMARY
