@@ -2,8 +2,8 @@
 # Build both supported Mac architectures; headless tests only, never GUI tests.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-python3 scripts/upstream.py check --latest
 python3 scripts/upstream.py prepare
+python3 scripts/upstream.py check --latest
 cargo fmt --all -- --check
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
 export MACOSX_DEPLOYMENT_TARGET=14.0

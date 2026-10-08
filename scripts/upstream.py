@@ -37,7 +37,7 @@ def metadata():
     return json.loads((ROOT / 'upstream.json').read_text())
 
 
-def check(check_latest=False):
+def check(check_latest=False, check_generated=True):
     pin = metadata()
     assert pin['repository'] == REPO
     assert re.fullmatch(r'rust-v\d+\.\d+\.\d+', pin['tag'])
@@ -56,7 +56,7 @@ def check(check_latest=False):
     for patch in pin['patches']:
         destination = ROOT / '.patched' / patch['crate']
         assert overrides[patch['crate']] == {'path': f".patched/{patch['crate']}"}
-        if destination.exists():
+        if check_generated and destination.exists():
             provenance = json.loads((destination / 'patch-provenance.json').read_text())
             assert provenance == {'revision': pin['revision'], 'patchSha256': hashlib.sha256((ROOT / patch['file']).read_bytes()).hexdigest()}, 'Run upstream.py prepare to refresh generated sources'
     helpers = tomllib.loads((ROOT / 'runtime-helpers/Cargo.toml').read_text())
@@ -82,7 +82,9 @@ def check(check_latest=False):
 
 def prepare(validate_lock=True):
     if validate_lock:
-        check()
+        # Restored caches may belong to an older stable pin or patch inventory.
+        # Validate source metadata first, then verify the regenerated cache.
+        check(check_generated=False)
     pin = metadata()
     directory = ROOT / '.upstream'
     directory.mkdir(exist_ok=True)
@@ -97,6 +99,8 @@ def prepare(validate_lock=True):
     if pin['patches']:
         from materialize_upstream import materialize
         materialize()
+    if validate_lock:
+        check()
     print(directory / 'codex-rs' / 'Cargo.toml')
 
 

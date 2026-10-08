@@ -128,3 +128,5 @@ B26|2026-10-08|New pencil tooltip passed plain string to styled-text Slint prope
 B27|2026-10-08|Glob protocol import shadows std Result and fixture uses obsolete image field|Explicit imports and current image/detail shape
 
 B28|2026-10-08|New automation measurement borrows an existing item reference; activity read condition nests a collapsible branch|Remove redundant borrow and collapse condition; mechanical lint cleanup, no new invariant
+
+B29|2026-10-08|Preparation validates restored generated-crate provenance before replacing an older upstream cache|Validate source pins first, regenerate, then enforce provenance; verified with deliberately stale cache
