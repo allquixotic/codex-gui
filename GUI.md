@@ -1321,8 +1321,9 @@ timestamps before ZIP creation. Windows main-push builds remain automatic.
 
 Mac uses the existing pinned Developer ID Application certificate expiring
 in 2031 and AC_NOTARY keychain profile. The universal app and code-mode helper
-use hardened runtime and secure timestamps; only the V8 helper receives allow-jit.
-Verify actual helper IPC/JavaScript execution without launching the GUI. Notarize
+use hardened runtime and secure timestamps; only the V8 helper receives upstream’s allow-jit + allow-unsigned-executable-memory
+entitlements; the latter is needed by Intel V8. The GUI remains unentitled.
+Verify actual helper IPC/JavaScript execution on both architectures without launching the GUI. Notarize
 and staple the app first, then create, sign, notarize and staple its DMG. Require
 Accepted notarization logs and Gatekeeper/stapler verification of both container
 and mounted app. No PKG or Installer certificate is needed.

@@ -14,16 +14,20 @@ or export private keys. The runner checkout is separate from the working repo.
 Only register/dispatch this runner for an explicitly requested release.
 
 The Mac must have Xcode tools, Python 3.11+, Rust 1.95.0, the two Mac Rust
-targets, the pinned 2031 Application signing identity/private key, and the
+targets, Rosetta for Intel IPC validation, the pinned 2031 Application signing identity/private key, and the
 `AC_NOTARY` keychain profile. `scripts/build-macos.sh` builds a universal
 arm64/x86_64 GUI plus the pristine upstream code-mode helper for macOS 14+.
 Mac tests explicitly skip `window_runtime::tests`; never launch the GUI there.
 
 `scripts/package-macos.py` inventories native code, rejects non-system dynamic
 dependencies, signs the helper and GUI inside out, and enables hardened runtime.
-Only the V8 helper receives `com.apple.security.cs.allow-jit`; no blanket memory,
-library-validation or debugger entitlements. An IPC smoke test runs JavaScript
-in that signed helper without starting the GUI. Sign with Application SHA-1
+Only the V8 helper receives the stable upstream `allow-jit` and
+`allow-unsigned-executable-memory` entitlements; Intel V8 requires the latter.
+The GUI receives neither, and no executable disables library validation or
+enables debugger access. IPC smoke tests force both architectures and run
+JavaScript in the signed helper without starting the GUI. The early
+`dev/macos-packaging-check.sh` gate checks real Apple lipo slice verification and
+the exact helper entitlement inventory before compilation. Sign with Application SHA-1
 `9A3CFFC04D3472208A62C48E707EA6D4261998A1`, team `B6XDYNLMPU`, expiring
 September 17, 2031; never select an ambiguous certificate by name. No PKG is built.
 

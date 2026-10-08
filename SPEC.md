@@ -37,7 +37,7 @@ V8: Cache ! survive restart under resolved CODEX_HOME; any manual rename ! perma
 
 V9: Conversation selection ! match rendered rich/plain glyphs and UTF-8 graphemes; pointer drag + Shift/arrows ! select; Ctrl/Cmd+C and menu Copy ! selected plain text; links and markdown ! preserve; tab change ! clear; selected scene ! remain bounded.
 
-V10: Release ! sign every native payload with expected identity + secure timestamp; Mac ! harden runtime, restrict JIT entitlement to V8 helper, staple accepted app before DMG construction, accept both Apple logs, validate DMG + mounted app. Attestation ! bind final package bytes to exact successful source/workflow; temporary Mac runner ! manual main only, no GUI, remove after job.
+V10: Mac native payload ! contain arm64 + x86_64 slices, verified by actual Apple tools before signing. Release ! sign every native payload with expected identity + secure timestamp; Mac ! harden runtime, restrict V8 entitlements to code-mode helper; execute IPC on both slices, staple accepted app before DMG construction, accept both Apple logs, validate DMG + mounted app. Attestation ! bind final package bytes to exact successful source/workflow; temporary Mac runner ! manual main only, no GUI, remove after job.
 
 ## §T TASKS
 id|status|task|cites
@@ -93,3 +93,7 @@ B17|2026-10-07|Rich shaping gave every paragraph range 0..0, clamping cursor geo
 B18|2026-10-07|Completed-turn summary scheduling did not mark the initial missing-cache attempt, allowing sidebar refresh to invalidate and duplicate in-flight inference|V7; share queue bookkeeping and verify exactly two purpose calls for two processed requests on software and GPU renderers
 
 Release evidence: v0.3.0, commit e3494e5943458e61b5209ba7761bdbd02f4922e1; hosted workflow 37697823119 passed all 629 Windows tests and interaction/package gates. The exact ZIP passed software/GPU and question-form smoke tests on games, helper dispatch/startup/manifest checks, and GitHub digest verification. Mac: 638 headless tests and clean Clippy; no GUI launch. See GUI.md §24.
+
+B19|2026-10-07|Installed Apple lipo rejects combined two-architecture -verify_arch invocation even with input-first order|V10; verify slices independently and add real clang/lipo universal-positive plus single-slice-negative headless packaging gate
+
+B20|2026-10-07|allow-jit alone works on arm64 but signed x86_64 V8 traps during code-range setup; unsigned control passes and stable upstream already includes allow-unsigned-executable-memory|V10; reuse exact upstream helper entitlements, keep GUI unentitled, force both architectures through signed IPC/JIT regression before notarization

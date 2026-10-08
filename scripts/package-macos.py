@@ -66,6 +66,10 @@ def main():
     identities = run('security', 'find-identity', '-v', '-p', 'codesigning', capture=True)
     if IDENTITY not in identities:
         raise RuntimeError('Pinned 2031 Developer ID Application identity unavailable')
+    entitlements = plistlib.loads((ROOT / 'packaging/macos/code-mode.entitlements').read_bytes())
+    upstream_entitlements = plistlib.loads((ROOT / '.upstream/.github/scripts/macos-signing/codex-code-mode-host.entitlements.plist').read_bytes())
+    if entitlements != upstream_entitlements:
+        raise RuntimeError('Review V8 entitlements against the pinned stable upstream helper')
     run('xcrun', 'notarytool', 'history', '--keychain-profile', PROFILE, '--output-format', 'json', capture=True)
     dist = ROOT / 'dist'
     stage = dist / 'macos-stage'
@@ -96,7 +100,7 @@ def main():
     if set(native) != expected:
         raise RuntimeError(f'Unexpected native inventory: {native}; review nested signing order')
     for path in sorted(native):
-        run('lipo', '-verify_arch', 'arm64', 'x86_64', path)
+        run('bash', 'scripts/verify-macos-architectures.sh', path)
         dependencies = run('otool', '-L', path, capture=True)
         if any(line.startswith('\t') and not line.strip().startswith(('/System/Library/', '/usr/lib/'))
                for line in dependencies.splitlines()):
@@ -109,7 +113,8 @@ def main():
         verify_code(path)
     run('codesign', '--force', '--timestamp', '--options', 'runtime', '--sign', IDENTITY, app)
     verify_code(app)
-    run(sys.executable, 'dev/code-mode-signing-smoke.py', app / 'Contents/MacOS/codex-code-mode-host')
+    for arch in ('arm64', 'x86_64'):
+        run(sys.executable, 'dev/code-mode-signing-smoke.py', app / 'Contents/MacOS/codex-code-mode-host', '--arch', arch)
     temporary_zip = dist / 'macos-app-notary.zip'
     run('ditto', '-c', '-k', '--keepParent', app, temporary_zip)
     app_id = notarize(temporary_zip, evidence, 'app')

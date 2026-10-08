@@ -29,5 +29,5 @@ mkdir -p target/universal-release
 for binary in codex-gui codex-code-mode-host; do
     lipo -create "target/aarch64-apple-darwin/release/$binary" \
         "target/x86_64-apple-darwin/release/$binary" -output "target/universal-release/$binary"
-    lipo -verify_arch arm64 x86_64 "target/universal-release/$binary"
+    bash scripts/verify-macos-architectures.sh "target/universal-release/$binary"
 done

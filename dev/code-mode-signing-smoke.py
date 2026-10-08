@@ -1,4 +1,5 @@
 """Exercise the signed V8 helper's real IPC/JIT, without launching a GUI."""
+import argparse
 import json
 import selectors
 import struct
@@ -6,7 +7,14 @@ import subprocess
 import sys
 import time
 
-host = subprocess.Popen([sys.argv[1], '--listen', 'stdio'], stdin=subprocess.PIPE,
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('binary')
+parser.add_argument('--arch', choices=['native', 'arm64', 'x86_64'], default='native')
+options = parser.parse_args()
+command = [options.binary, '--listen', 'stdio']
+if options.arch != 'native':
+    command = ['/usr/bin/arch', '-' + options.arch] + command
+host = subprocess.Popen(command, stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 deadline = time.monotonic() + 30
 selector = selectors.DefaultSelector()
@@ -65,7 +73,7 @@ try:
             break
     host.stdin.close()
     assert host.wait(timeout=10) == 0
-    print('PASS: signed hardened-runtime code-mode helper executes JavaScript via real IPC')
+    print(f'PASS: {options.arch} code-mode helper executes JavaScript via real IPC')
 finally:
     selector.close()
     if host.poll() is None:

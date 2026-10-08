@@ -88,7 +88,8 @@ all working features; `SPEC.md` records focused invariants and regressions.
 - Build universal arm64/x86_64 binaries with `scripts/build-macos.sh`. Mac tests
   must skip `window_runtime::tests`. `scripts/package-macos.py` uses the pinned
   2031 Application identity and AC_NOTARY; sign nested executables inside out,
-  grant allow-jit only to the V8 code-mode helper, verify actual IPC execution,
+  apply the pinned upstream V8 helper entitlements only to that helper, verify
+  actual IPC execution on arm64 and x86_64 (Rosetta required on ARM64),
   then notarize/staple/assess the app before creating the DMG. Sign, notarize,
   staple and assess the DMG and mounted app. Inspect both Apple logs. No PKG.
 - Attest only final signed/stapled distribution bytes inside their build workflow;

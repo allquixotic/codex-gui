@@ -24,6 +24,14 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+      - name: Check Apple packaging tools without executing code or opening UI
+        run: bash dev/macos-packaging-check.sh
+      - name: Restore this release runner's isolated build cache
+        run: |
+          for directory in target .patched .upstream; do
+            cache="$RUNNER_WORKSPACE/mac-release-cache/$directory"
+            if [[ -d "$cache" ]]; then mv "$cache" "$GITHUB_WORKSPACE/$directory"; fi
+          done
       - name: Build universal binaries and run headless tests
         run: bash scripts/build-macos.sh
       - name: Sign, notarize, staple and assess app and DMG
