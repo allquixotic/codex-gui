@@ -53,6 +53,7 @@ pub(super) struct ActivityController {
     statuses: HashMap<String, SidebarThreadStatus>,
     pending: VecDeque<(String, i64)>,
     loading: HashSet<String>,
+    goals: HashSet<String>,
     save_revision: Arc<AtomicU64>,
     save_lock: Arc<Mutex<()>>,
 }
@@ -107,6 +108,27 @@ impl ActivityController {
             .get(id)
             .map(Entry::status)
             .unwrap_or(SidebarThreadStatus::Idle)
+    }
+
+    fn notification_at(&mut self, notification: &ServerNotification, now: i64) -> Option<i64> {
+        use ServerNotification as N;
+        match notification {
+            // Resume sends goal snapshots too. Use the goal's actual timestamp,
+            // and do not treat an initial/repeated empty snapshot as a mutation.
+            N::ThreadGoalUpdated(updated) => {
+                self.goals.insert(updated.thread_id.clone());
+                (updated.goal.updated_at > self.at(&updated.thread_id).unwrap_or(0))
+                    .then_some(updated.goal.updated_at)
+            }
+            N::ThreadGoalCleared(cleared) => self.goals.remove(&cleared.thread_id).then_some(now),
+            N::ItemStarted(_)
+            | N::ItemCompleted(_)
+            | N::AgentMessageDelta(_)
+            | N::TurnStarted(_)
+            | N::TurnCompleted(_)
+            | N::ThreadNameUpdated(_) => Some(now),
+            _ => None,
+        }
     }
 }
 impl AppController {
@@ -209,19 +231,13 @@ impl AppController {
                 },
             );
         }
-        if !matches!(
-            notification,
-            N::ItemStarted(_)
-                | N::ItemCompleted(_)
-                | N::AgentMessageDelta(_)
-                | N::TurnStarted(_)
-                | N::TurnCompleted(_)
-                | N::ThreadNameUpdated(_)
-                | N::ThreadGoalUpdated(_)
-                | N::ThreadGoalCleared(_)
-        ) {
+        let Some(at) = self
+            .sidebar
+            .activity
+            .notification_at(notification, unix_now())
+        else {
             return;
-        }
+        };
         let Some(id) = crate::app::notification_thread_id(notification) else {
             return;
         };
@@ -240,7 +256,7 @@ impl AppController {
             .entries
             .entry(id.to_string())
             .or_default();
-        entry.observe(unix_now());
+        entry.observe(at);
         if active {
             entry.read();
         } else {
@@ -284,6 +300,45 @@ impl AppController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use codex_app_server_protocol::{
+        ThreadGoal, ThreadGoalClearedNotification, ThreadGoalStatus, ThreadGoalUpdatedNotification,
+    };
+
+    #[test]
+    fn v13_goal_snapshots_do_not_become_new_activity() {
+        let mut activity = ActivityController::default();
+        let mut entry = Entry::default();
+        entry.observe(100);
+        entry.read();
+        activity.entries.insert("thread".into(), entry);
+        let clear = ServerNotification::ThreadGoalCleared(ThreadGoalClearedNotification {
+            thread_id: "thread".into(),
+        });
+        assert_eq!(activity.notification_at(&clear, 200), None);
+        let mut update = ServerNotification::ThreadGoalUpdated(ThreadGoalUpdatedNotification {
+            thread_id: "thread".into(),
+            turn_id: None,
+            goal: ThreadGoal {
+                thread_id: "thread".into(),
+                objective: "Test goal".into(),
+                status: ThreadGoalStatus::Active,
+                token_budget: None,
+                tokens_used: 0,
+                time_used_seconds: 0,
+                created_at: 90,
+                updated_at: 90,
+            },
+        });
+        assert_eq!(activity.notification_at(&update, 200), None);
+        if let ServerNotification::ThreadGoalUpdated(update) = &mut update {
+            update.goal.updated_at = 210;
+        }
+        assert_eq!(activity.notification_at(&update, 250), Some(210));
+        activity.entries.get_mut("thread").unwrap().observe(210);
+        assert_eq!(activity.notification_at(&update, 260), None);
+        assert_eq!(activity.notification_at(&clear, 270), Some(270));
+        assert_eq!(activity.notification_at(&clear, 280), None);
+    }
     #[test]
     fn v13_reads_do_not_advance_activity_and_new_output_becomes_unread() {
         let mut entry = Entry::default();
