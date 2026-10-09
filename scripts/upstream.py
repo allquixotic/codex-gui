@@ -3,11 +3,13 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import tomllib
 import urllib.request
+import urllib.parse
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = 'https://github.com/openai/codex'
@@ -18,7 +20,11 @@ def run(*args, cwd=ROOT):
 
 
 def fetch(url):
-    request = urllib.request.Request(url, headers={'User-Agent': 'codex-gui-upstream'})
+    headers = {'User-Agent': 'codex-gui-upstream'}
+    token = os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN')
+    if token and urllib.parse.urlparse(url).hostname == 'api.github.com':
+        headers['Authorization'] = f'Bearer {token}'
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 

@@ -33,6 +33,8 @@ jobs:
             if [[ -d "$cache" ]]; then mv "$cache" "$GITHUB_WORKSPACE/$directory"; fi
           done
       - name: Build universal binaries and run headless tests
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/build-macos.sh
       - name: Sign, notarize, staple and assess app and DMG
         run: python3 scripts/package-macos.py

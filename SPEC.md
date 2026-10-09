@@ -146,3 +146,5 @@ B35|2026-10-08|Steer-edit fixture assumed slow streaming retains pending input, 
 B36|2026-10-08|Legacy upstream recency_at can equal rollout file mtime, which resume advances without conversation work|Use creation plus actual turn timestamps and live work notifications; Windows reopen regression records both caches; existing V13
 
 B37|2026-10-08|Resume emits goal snapshots, including goal-cleared for threads with no goal; GUI treats snapshots as live mutations|Use goal updated_at and ignore clear without a known goal; snapshot/update/clear unit regression and Windows reopen check; V13
+
+B38|2026-10-08|Hosted runner shared IP exhausts anonymous GitHub API quota before stable-version check|Use workflow read-only token only for api.github.com requests; stable check retained
