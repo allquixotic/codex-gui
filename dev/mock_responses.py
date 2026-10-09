@@ -209,6 +209,15 @@ def plan_events(body, text):
             yield function_call("exec_command", {"cmd": command})
         else:
             yield function_call("shell", {"command": ["bash", "-lc", command]})
+    elif lowered.startswith("pending-tool"):
+        # Streaming inference is interrupted immediately by steering. Keep a
+        # real tool running to exercise input that has not yet been consumed.
+        if sys.platform == "win32":
+            arguments = {"cmd": "Start-Sleep -Seconds 12", "shell": "powershell.exe", "login": False}
+        else:
+            arguments = {"cmd": "sleep 12", "login": False}
+        arguments["yield_time_ms"] = 30000
+        yield function_call("exec_command", arguments)
     elif lowered.startswith("bg"):
         command = text[2:].strip() or "sleep 30"
         if "exec_command" in names:

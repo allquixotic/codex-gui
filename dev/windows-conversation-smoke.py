@@ -31,6 +31,7 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-conversation-') as directory:
     config = home / 'config.toml'
     config.write_text(config.read_text().replace('sandbox_mode = "workspace-write"', 'sandbox_mode = "danger-full-access"') + f'\n[projects.{json.dumps(str(project))}]\ntrust_level = "trusted"\n')
     requests = out / 'requests.jsonl'
+    requests.unlink(missing_ok=True)
     with open(out / 'mock.log', 'w') as log:
         mock = subprocess.Popen([sys.executable, str(ROOT / 'dev/mock_responses.py'), '--port', str(port), '--request-log', str(requests)], stdout=log, stderr=log)
         try:
@@ -94,9 +95,10 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-conversation-') as directory:
                 {'composer': ['type', 'DELETED_PENDING']}, {'composer': ['send']}, {'wait': 400}, {'pending': ['click']}, {'wait': 400},
                 {'pending': ['delete']}, {'wait': 400}, {'pending': ['dump', str(out / 'deleted.json')]},
                 {'wait': 16000}, {'wait_idle': 30000},
-                {'send': 'slow steer editing'}, {'wait': 300},
+                {'send': 'pending-tool'}, {'wait': 1500},
                 {'composer': ['type', 'STEER_ORIGINAL']}, {'composer': ['steer']}, {'wait': 400},
-                {'pending': ['click']}, {'wait': 400}, {'pending': ['text', 'STEER_EDITED']}, {'pending': ['save']}, {'wait': 400},
+                {'pending': ['click']}, {'wait': 400}, {'pending': ['dump', str(out / 'steer-editing.json')]},
+                {'pending': ['text', 'STEER_EDITED']}, {'pending': ['save']}, {'wait': 400},
                 {'pending': ['dump', str(out / 'steer-saved.json')]},
                 {'composer': ['type', 'STEER_DELETED']}, {'composer': ['steer']}, {'wait': 400},
                 {'pending': ['click']}, {'wait': 400}, {'pending': ['delete']}, {'wait': 400},
@@ -109,6 +111,7 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-conversation-') as directory:
             assert data('editing')['open'] and data('editing')['text'] == 'ORIGINAL_PENDING', data('editing')
             assert not data('saved')['open'] and not data('saved')['error'], data('saved')
             assert not data('deleted')['open'] and not data('deleted')['error'], data('deleted')
+            assert data('steer-editing')['open'] and data('steer-editing')['text'] == 'STEER_ORIGINAL', data('steer-editing')
             assert not data('steer-saved')['open'] and not data('steer-saved')['error'], data('steer-saved')
             assert not data('steer-deleted')['open'] and not data('steer-deleted')['error'], data('steer-deleted')
             assert data('race')['open'] and data('race')['error'] and data('race')['text'] == 'RACE_CHANGED', data('race')

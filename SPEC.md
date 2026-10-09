@@ -140,3 +140,5 @@ B32|2026-10-08|Helper consumer retained windows-sys 0.52 after stable upstream a
 B33|2026-10-08|Automation inspected only styled-text items, so compiled plain sidebar labels and pencil glyphs were invisible to hit testing|Handle Slint simple, complex and styled text; require a measured thread label in every tooltip fixture; existing V12/V14
 
 B34|2026-10-08|Narrow sidebar drawer was painted after the tooltip, putting its dimming layer above the popup|Paint the pane-bounded tooltip after drawers; existing V12
+
+B35|2026-10-08|Steer-edit fixture assumed slow streaming retains pending input, but native steering immediately interrupts inference; reruns also inherited request logs|Hold a real tool open, require the original steer editor, clear request logs before each run; existing V14
