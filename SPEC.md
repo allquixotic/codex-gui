@@ -136,3 +136,7 @@ B30|2026-10-08|Pending-message smoke used the legacy automation send default, wh
 B31|2026-10-08|Independent certificate extraction passed codesign an optional prefix as a separate argument|Use --extract-certificates=PREFIX; exact downloaded certificate and both architectures verified, no product change
 
 B32|2026-10-08|Helper consumer retained windows-sys 0.52 after stable upstream adopted 0.61.2 and pointer handles|Inherit workspace bindings, refresh the lockfile and validate inheritance before builds; existing V10 stable-helper invariant
+
+B33|2026-10-08|Automation inspected only styled-text items, so compiled plain sidebar labels and pencil glyphs were invisible to hit testing|Handle Slint simple, complex and styled text; require a measured thread label in every tooltip fixture; existing V12/V14
+
+B34|2026-10-08|Narrow sidebar drawer was painted after the tooltip, putting its dimming layer above the popup|Paint the pane-bounded tooltip after drawers; existing V12

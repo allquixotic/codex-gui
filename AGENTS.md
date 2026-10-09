@@ -61,7 +61,9 @@ all working features; `SPEC.md` records focused invariants and regressions.
   and sticky manual-name history when changing the cache format.
 - Conversation selection must follow shaped glyphs, wrapping, clipping and UTF-8
   graphemes. Keep native text input selection and rich links working. Run both
-  dev/windows-smoke.py and dev/windows-purpose-selection-smoke.py on Windows.
+  dev/windows-smoke.py, dev/windows-purpose-selection-smoke.py and
+  dev/windows-conversation-smoke.py on Windows; test software and GPU renderers
+  on the signed release package, including pending Queue/Steer edits and races.
 - Answer every synchronous server request exactly once. Async questions use
   ordinary user messages and remain answerable after the requesting turn ends.
 - Use supported RTK filters when they reduce verbose output; machine-readable

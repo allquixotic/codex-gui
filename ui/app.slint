@@ -1092,14 +1092,6 @@ export component MainWindow inherits Window {
             }
         }
 
-        sidebar-tooltip := SidebarTooltip {
-            // A narrow-window drawer occupies part of the conversation pane.
-            pane-x: max(conversation-pane.absolute-position.x, AppState.sidebar-drawer-open && !AppState.sidebar-fits ? root.drawer-sidebar-width : 0px);
-            pane-y: conversation-pane.absolute-position.y;
-            pane-width: max(0px, conversation-pane.absolute-position.x + conversation-pane.width - self.pane-x);
-            pane-height: conversation-pane.height;
-        }
-
         // Narrow windows: the sidebar and info pane open over the content.
         if AppState.sidebar-drawer-open && !AppState.sidebar-fits: Drawer {
             y: strip.height + banner.height;
@@ -1128,6 +1120,14 @@ export component MainWindow inherits Window {
                 InfoPane { }
             }
         }
+        sidebar-tooltip := SidebarTooltip {
+            // Keep the tooltip above drawer dimming and outside the sidebar.
+            pane-x: max(conversation-pane.absolute-position.x, AppState.sidebar-drawer-open && !AppState.sidebar-fits ? root.drawer-sidebar-width : 0px);
+            pane-y: conversation-pane.absolute-position.y;
+            pane-width: max(0px, conversation-pane.absolute-position.x + conversation-pane.width - self.pane-x);
+            pane-height: conversation-pane.height;
+        }
+
     }
 
     XtabOverlay {

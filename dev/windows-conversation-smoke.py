@@ -77,6 +77,7 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-conversation-') as directory:
                 x, y, w, h = shot['tooltip_bounds']
                 px, py, pw, ph = shot['tooltip_pane']
                 assert x >= px and y >= py and x + w <= px + pw + .5 and y + h <= py + ph + .5, shot
+                assert any(text['thread'] for text in shot['rendered_text']), (name, shot)
                 for text in shot['rendered_text']:
                     if text['thread'] and '…' not in text['text']:
                         assert text['measured'] <= text['width'] + .5, text

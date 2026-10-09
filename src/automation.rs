@@ -526,18 +526,28 @@ impl AppController {
 
     fn rendered_text_center(&self, needle: &str) -> Option<(f32, f32)> {
         use i_slint_core::item_tree::ItemRc;
-        use i_slint_core::items::StyledTextItem;
+        use i_slint_core::items::{ComplexText, SimpleText, StyledTextItem};
         use i_slint_core::window::WindowInner;
         use std::ops::ControlFlow;
         let inner = WindowInner::from_pub(self.window.window());
         let component = inner.try_component()?;
         let mut found = None;
         ItemRc::new_root(component).visit_descendants::<()>(|item| {
-            if item.is_visible()
-                && let Some(text) = item.downcast::<StyledTextItem>()
-            {
-                let raw =
-                    i_slint_core::styled_text::get_raw_text(&text.as_pin_ref().text()).into_owned();
+            if item.is_visible() {
+                let raw = if let Some(text) = item.downcast::<StyledTextItem>() {
+                    Some(
+                        i_slint_core::styled_text::get_raw_text(&text.as_pin_ref().text())
+                            .into_owned(),
+                    )
+                } else if let Some(text) = item.downcast::<ComplexText>() {
+                    Some(text.as_pin_ref().text().to_string())
+                } else {
+                    item.downcast::<SimpleText>()
+                        .map(|text| text.as_pin_ref().text().to_string())
+                };
+                let Some(raw) = raw else {
+                    return ControlFlow::Continue(());
+                };
                 if raw == needle {
                     let geometry = item.geometry();
                     let point = item.map_to_window(geometry.origin);
@@ -556,7 +566,7 @@ impl AppController {
     // Inspect the actual rendered sidebar glyph extents in Windows smoke tests.
     fn sidebar_rendered_text(&self) -> Vec<serde_json::Value> {
         use i_slint_core::item_tree::ItemRc;
-        use i_slint_core::items::{StyledTextItem, TextWrap};
+        use i_slint_core::items::{ComplexText, SimpleText, StyledTextItem, TextWrap};
         use i_slint_core::window::WindowInner;
         use slint::Model;
         use std::ops::ControlFlow;
@@ -581,12 +591,17 @@ impl AppController {
         let mut found = Vec::new();
         ItemRc::new_root(component).visit_descendants::<()>(|item| {
             if !item.is_visible() { return ControlFlow::Continue(()) }
-            if let Some(text) = item.downcast::<StyledTextItem>() {
-                let geometry = item.geometry();
-                let point = item.map_to_window(geometry.origin);
-                if point.x >= 0.0 && point.x < self.prefs.sidebar_width && geometry.size.width > 0.0 {
-                    let raw = i_slint_core::styled_text::get_raw_text(&text.as_pin_ref().text()).into_owned();
-                    let size = adapter.renderer().text_size(text.as_pin_ref(), item, None, TextWrap::NoWrap);
+            let geometry = item.geometry();
+            let point = item.map_to_window(geometry.origin);
+            if point.x >= 0.0 && point.x < self.prefs.sidebar_width && geometry.size.width > 0.0 {
+                let rendered = if let Some(text) = item.downcast::<StyledTextItem>() {
+                    Some((i_slint_core::styled_text::get_raw_text(&text.as_pin_ref().text()).into_owned(), adapter.renderer().text_size(text.as_pin_ref(), item, None, TextWrap::NoWrap)))
+                } else if let Some(text) = item.downcast::<ComplexText>() {
+                    Some((text.as_pin_ref().text().to_string(), adapter.renderer().text_size(text.as_pin_ref(), item, None, TextWrap::NoWrap)))
+                } else {
+                    item.downcast::<SimpleText>().map(|text| (text.as_pin_ref().text().to_string(), adapter.renderer().text_size(text.as_pin_ref(), item, None, TextWrap::NoWrap)))
+                };
+                if let Some((raw, size)) = rendered {
                     let thread = point.y > pane_top && !raw.is_empty() && titles.iter().any(|title| title.starts_with(&raw));
                     found.push(serde_json::json!({"text":raw,"x":point.x,"y":point.y,"width":geometry.size.width,"measured":size.width,"thread":thread}));
                 }
