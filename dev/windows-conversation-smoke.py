@@ -121,13 +121,14 @@ with tempfile.TemporaryDirectory(prefix='codex-gui-conversation-') as directory:
             assert any('STEER_EDITED' in text for text in texts), texts
             assert all('ORIGINAL_PENDING' not in text and 'DELETED_PENDING' not in text and 'RACE_CHANGED' not in text and 'STEER_ORIGINAL' not in text and 'STEER_DELETED' not in text for text in texts), texts
             initial = json.loads((home / 'gui-thread-activity.json').read_text())
+            (out / 'activity-before-reopen.json').write_text(json.dumps(initial, indent=2))
             prior = len(bodies)
             run('reopen', [{'wait_ready': 60000}, {'resume': read['rows'][0]['id']}, {'wait_idle': 30000}, {'wait': 1500}, dump('reopened'), {'quit': True}])
             assert len(requests.read_text().splitlines()) == prior, 'Viewing generated inference'
             restored = json.loads((home / 'gui-thread-activity.json').read_text())
-            for key in initial:
-                assert initial[key]['at'] == restored[key]['at'], 'Viewing advanced activity'
             (out / 'activity.json').write_text(json.dumps(restored, indent=2))
+            for key in initial:
+                assert initial[key]['at'] == restored[key]['at'], ('Viewing advanced activity', key, initial[key], restored[key])
             print('Conversation smoke passed: queue waits for full multi-step turn, Shift+Enter steers, pane-confined tooltips at both edges/narrow window, measured titles, unread/read and stable reopen activity.')
         finally:
             mock.terminate(); mock.wait(timeout=10)

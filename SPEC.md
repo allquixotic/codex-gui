@@ -142,3 +142,5 @@ B33|2026-10-08|Automation inspected only styled-text items, so compiled plain si
 B34|2026-10-08|Narrow sidebar drawer was painted after the tooltip, putting its dimming layer above the popup|Paint the pane-bounded tooltip after drawers; existing V12
 
 B35|2026-10-08|Steer-edit fixture assumed slow streaming retains pending input, but native steering immediately interrupts inference; reruns also inherited request logs|Hold a real tool open, require the original steer editor, clear request logs before each run; existing V14
+
+B36|2026-10-08|Legacy upstream recency_at can equal rollout file mtime, which resume advances without conversation work|Use creation plus actual turn timestamps and live work notifications; Windows reopen regression records both caches; existing V13

@@ -114,9 +114,10 @@ impl AppController {
         for thread in threads.iter().filter(|thread| !thread.ephemeral) {
             let activity = &mut self.sidebar.activity;
             let entry = activity.entries.entry(thread.id.clone()).or_default();
-            // recency excludes resume/configuration writes. Last-turn timestamps
-            // below additionally account for assistant/tool completion.
-            entry.observe(thread.recency_at.unwrap_or(thread.created_at));
+            // Legacy rollouts expose file mtime as recency_at, including resume
+            // and configuration writes. Only creation and actual turn timestamps
+            // below are trustworthy evidence of conversation activity.
+            entry.observe(thread.created_at);
             activity.statuses.insert(
                 thread.id.clone(),
                 match &thread.status {
