@@ -46,6 +46,10 @@ pub(crate) enum Step {
     WaitIdle(u64),
     /// Wait for the active thread's cached purpose and background queue to settle.
     WaitPurpose(u64),
+    /// Wait for the pending editor to reach a settled open/closed state.
+    WaitPending { open: bool, timeout_ms: u64 },
+    /// Wait until the sidebar hover delay produces tooltip content.
+    WaitSidebarTooltip(u64),
     /// Open a new thread tab in this folder.
     NewThread(PathBuf),
     /// Start a thread in this folder through the folder-trust check.
@@ -206,7 +210,12 @@ impl AppController {
             };
             eprintln!("codex-gui automation: {step:?}");
             match step {
-                Step::Wait(_) | Step::WaitReady(_) | Step::WaitIdle(_) | Step::WaitPurpose(_) => {
+                Step::Wait(_)
+                | Step::WaitReady(_)
+                | Step::WaitIdle(_)
+                | Step::WaitPurpose(_)
+                | Step::WaitPending { .. }
+                | Step::WaitSidebarTooltip(_) => {
                     if let Some(automation) = self.automation.as_mut() {
                         automation.waiting = Some((step, Instant::now()));
                     }
@@ -620,6 +629,19 @@ impl AppController {
             }
             Step::WaitPurpose(timeout) => {
                 self.purpose_idle_for_test() || timed_out(elapsed, *timeout, "purpose cache")
+            }
+            Step::WaitPending { open, timeout_ms } => {
+                let state = self.window.global::<crate::ui::PendingMessageState>();
+                (state.get_open() == *open && !state.get_saving())
+                    || timed_out(elapsed, *timeout_ms, "pending editor")
+            }
+            Step::WaitSidebarTooltip(timeout) => {
+                !self
+                    .window
+                    .global::<crate::ui::SidebarState>()
+                    .get_tooltip_text()
+                    .is_empty()
+                    || timed_out(elapsed, *timeout, "sidebar tooltip")
             }
             Step::WaitIdle(timeout) => {
                 let idle = self

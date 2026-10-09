@@ -148,3 +148,7 @@ B36|2026-10-08|Legacy upstream recency_at can equal rollout file mtime, which re
 B37|2026-10-08|Resume emits goal snapshots, including goal-cleared for threads with no goal; GUI treats snapshots as live mutations|Use goal updated_at and ignore clear without a known goal; snapshot/update/clear unit regression and Windows reopen check; V13
 
 B38|2026-10-08|Hosted runner shared IP exhausts anonymous GitHub API quota before stable-version check|Use workflow read-only token only for api.github.com requests; stable check retained
+
+B39|2026-10-08|GPU editor opens after fixed 400ms fixture delay, so automation types before the real form exists|Wait for settled editor open/closed state instead of elapsed time; V14
+
+B40|2026-10-08|Narrow-hover fixture keeps pointer inside a recreated drawer row and assumes its tooltip is ready after 800ms|Enter from outside the row and wait for actual tooltip content before bounds assertions; V12

@@ -64,6 +64,8 @@ all working features; `SPEC.md` records focused invariants and regressions.
   dev/windows-smoke.py, dev/windows-purpose-selection-smoke.py and
   dev/windows-conversation-smoke.py on Windows; test software and GPU renderers
   on the signed release package, including pending Queue/Steer edits and races.
+  Wait for observable editor/tooltip state in automation rather than guessing
+  asynchronous completion from fixed delays; enter hover targets from outside.
 - Answer every synchronous server request exactly once. Async questions use
   ordinary user messages and remain answerable after the requesting turn ends.
 - Use supported RTK filters when they reduce verbose output; machine-readable
