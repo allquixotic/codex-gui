@@ -61,6 +61,7 @@ def check(check_latest=False, check_generated=True):
             assert provenance == {'revision': pin['revision'], 'patchSha256': hashlib.sha256((ROOT / patch['file']).read_bytes()).hexdigest()}, 'Run upstream.py prepare to refresh generated sources'
     helpers = tomllib.loads((ROOT / 'runtime-helpers/Cargo.toml').read_text())
     assert helpers['package']['version'] == pin['version'], 'Helper metadata must match stable backend'
+    assert helpers['target']['cfg(windows)']['dependencies']['windows-sys'].get('workspace') is True, 'Helpers must inherit the backend Windows API bindings'
     for binary in helpers['bin']:
         assert binary['path'].startswith('../.upstream/codex-rs/'), 'Helpers must use pristine stable entrypoints'
     lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())

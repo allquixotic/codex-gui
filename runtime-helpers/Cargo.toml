@@ -75,5 +75,4 @@ features = [
     "Win32_System_Registry",
     "Win32_System_Services",
 ]
-version = "0.52"
-
+workspace = true

@@ -130,3 +130,9 @@ B27|2026-10-08|Glob protocol import shadows std Result and fixture uses obsolete
 B28|2026-10-08|New automation measurement borrows an existing item reference; activity read condition nests a collapsible branch|Remove redundant borrow and collapse condition; mechanical lint cleanup, no new invariant
 
 B29|2026-10-08|Preparation validates restored generated-crate provenance before replacing an older upstream cache|Validate source pins first, regenerate, then enforce provenance; verified with deliberately stale cache
+
+B30|2026-10-08|Pending-message smoke used the legacy automation send default, which steers; its first edit scenario did not exercise Queue|Drive the actual composer Queue action for queue edit/delete/race coverage; existing V11/V14
+
+B31|2026-10-08|Independent certificate extraction passed codesign an optional prefix as a separate argument|Use --extract-certificates=PREFIX; exact downloaded certificate and both architectures verified, no product change
+
+B32|2026-10-08|Helper consumer retained windows-sys 0.52 after stable upstream adopted 0.61.2 and pointer handles|Inherit workspace bindings, refresh the lockfile and validate inheritance before builds; existing V10 stable-helper invariant
