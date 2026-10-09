@@ -66,12 +66,12 @@ T9|x|Selectable user/assistant conversation text, keyboard/clipboard/context men
 
 T10|x|Build, sign, notarize/staple and attest 0.3.1 Windows/Mac packages; verify exact bytes, publish and remove temporary runner|V10,I.distribution; GUI.md §25
 
-T11|.|Integrate stable 0.162.0; replace Astra patches with minimal upstream Sol catalog backport|V5
-T12|.|Explicit queue/steer input and key routing, including delayed input|V11,I.questions
-T13|.|Bound sidebar tooltips, readable summaries and persistent activity/read state|V7,V8,V12,V13,I.summaries
-T14|.|Verify Windows software/GPU interactions; sign, attest and publish 0.4.0 for Windows/Mac|V10,I.distribution
+T11|x|Integrate stable 0.162.0; replace Astra patches with minimal upstream Sol catalog backport|V5
+T12|x|Explicit queue/steer input and key routing, including delayed input|V11,I.questions
+T13|x|Bound sidebar tooltips, readable summaries and persistent activity/read state|V7,V8,V12,V13,I.summaries
+T14|x|Verify Windows software/GPU interactions; sign, attest and publish 0.4.0 for Windows/Mac|V10,I.distribution
 
-T15|.|Edit/delete pending messages from transcript, preserving delivery intent and attachment data; verify Windows races|V14,I.questions
+T15|x|Edit/delete pending messages from transcript, preserving delivery intent and attachment data; verify Windows races|V14,I.questions
 
 ## §B BUGS
 id|date|cause|fix
@@ -152,3 +152,5 @@ B38|2026-10-08|Hosted runner shared IP exhausts anonymous GitHub API quota befor
 B39|2026-10-08|GPU editor opens after fixed 400ms fixture delay, so automation types before the real form exists|Wait for settled editor open/closed state instead of elapsed time; V14
 
 B40|2026-10-08|Narrow-hover fixture keeps pointer inside a recreated drawer row and assumes its tooltip is ready after 800ms|Enter from outside the row and wait for actual tooltip content before bounds assertions; V12
+
+Release evidence: v0.4.0, source 1b512fecad7e28826ef98538a69dd9b05327275a; Windows run 37874908459 passed 633 tests, interaction gates, Azure signatures and attestation. Exact signed ZIP passed question forms, software/GPU purpose/selection and conversation tests on games, including pending edits/deletes/races and stable reopen activity; all signatures/timestamps and native helper IPC verified. Mac run 37874969609 passed 642 headless tests, signed helper IPC/JIT on both architectures, both Accepted notarizations, staples and Gatekeeper including mounted app. Strict Clippy passed; no Mac GUI launched. Online/bundled attestations and all eight public asset digests verified. Temporary Mac runner deregistered and removed. See GUI.md §26 and docs/releases.md.

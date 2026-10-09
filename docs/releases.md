@@ -68,3 +68,40 @@ checksums and platform Sigstore bundles, and verify GitHub asset digests against
 local bytes before publishing. Recheck latest stable upstream. Remove temporary
 runner registration/credentials; clean only this project's regenerable build
 outputs after all assets are verified. Preserve signing/notarization evidence.
+
+## Version 0.4.0
+
+Published [v0.4.0](https://github.com/allquixotic/codex-gui/releases/tag/v0.4.0)
+on October 8, 2026 (October 9 UTC), from source
+`1b512fecad7e28826ef98538a69dd9b05327275a`. Upstream is stable Codex 0.162.0,
+revision `c1382380de69521303b416720a52f42d51af6248`.
+
+The [Windows workflow](https://github.com/allquixotic/codex-gui/actions/runs/37874908459)
+passed 633 tests and all interaction/package/signing gates. The exact downloaded
+ZIP passed question forms, purpose/selection and conversation suites on `games`
+with software and GPU renderers, including Queue/Steer, pending-message
+edit/delete/races, sidebar tooltip bounds and stable activity after reopening.
+All four Authenticode signatures had the expected publisher and timestamps;
+the bundled code-mode helper executed JavaScript through its native IPC.
+
+The [Mac workflow](https://github.com/allquixotic/codex-gui/actions/runs/37874969609)
+passed 642 headless tests; strict Clippy passed locally. No Mac GUI was launched.
+The universal arm64/x86_64 app and helper use Application certificate SHA-1
+`9A3CFFC04D3472208A62C48E707EA6D4261998A1`, team `B6XDYNLMPU` (expires
+September 17, 2031). Actual signed helper IPC/JIT passed on both architectures.
+Apple accepted app submission `e5fc97d0-2ade-408a-94d1-83e5b24e6ab0` and DMG
+submission `18432a61-2d51-4a88-8621-6c27d39cecdd`; both logs had no issues.
+App and DMG staples, Gatekeeper, mounted app, signatures, architectures and
+embedded build metadata passed independent verification.
+
+Online and bundled GitHub attestations matched the exact source, main ref and
+signer workflows. Windows additionally passed the hosted-runner policy. All
+eight public release assets matched local SHA-256 digests after publication.
+Public signing records accompany the packages. The temporary Mac runner
+deregistered and its checkout was removed; final artifacts and detailed evidence
+remain in ignored `dist/release-0.4.0`.
+
+```text
+7a120a888da0d0ef54c12164041aa4d4afb67d65a8c0649c1fb4004f9e2ada46  codex-gui-0.4.0-windows-x64.zip
+a4b79651c38a762decf0f8b9c5515dda7b8fffda5676459ea01e901227d78401  codex-gui-0.4.0-macos-universal.dmg
+```

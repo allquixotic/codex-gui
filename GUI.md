@@ -1400,8 +1400,21 @@ visited/read and idle, no circle means unvisited/idle, amber means input needed,
 and red means failure. Selecting a thread clears unread state without changing
 its date. Read-only last-turn metadata reconciles activity without inference.
 
-Validation and publication evidence are recorded here when complete. All GUI
-tests run on Windows; this Mac remains headless.
+Published `v0.4.0` on October 8, 2026 from
+`1b512fecad7e28826ef98538a69dd9b05327275a`. Windows workflow `37874908459`
+passed 633 tests, interaction fixtures, Azure signing and artifact attestation.
+The exact signed ZIP passed question forms, purpose/selection and conversation
+tests with both software and GPU rendering on `games`, including pending-message
+edit/delete races, tooltip bounds and unchanged activity after reopening.
+All four executable signatures, timestamps, package identity and native code-mode
+helper IPC passed. Mac workflow `37874969609` passed 642 headless tests and strict
+Clippy passed locally; no Mac GUI was launched. The universal app and DMG passed
+Developer ID signing, both Accepted notarizations, stapling, Gatekeeper and
+mounted-app verification. Signed helper IPC/JIT passed on both architectures.
+Online and bundled attestations verified against the exact source/workflows;
+all eight public release asset digests matched local bytes. The temporary Mac
+runner deregistered and its checkout was removed. See `docs/releases.md` for
+checksums and Apple submission identifiers.
 
 ### Pending-message editing (0.4.0)
 
@@ -1409,6 +1422,6 @@ Unsent message bubbles offer a pencil action with a multiline editor, Save,
 Delete and Cancel. Local messages waiting for a thread to start retain their
 Queue/Steer intent. Server-queued messages use atomic update/delete requests;
 steering input not yet consumed uses the documented core/app-server patch.
-attachments remain attached when text changes. A message already consumed
+Attachments remain attached when text changes. A message already consumed
 cannot be recalled or rewritten. If consumption wins a race with an edit, retain
 the edited text and explain that it was not applied.
